@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -73,17 +74,25 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	}
 	report := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		ctx = sanitizer.Sanitize(ctx, report)
+		ctx = sanitizer.Sanitize(context.Background(), report)
 		if ctx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
 			return
 		}
 	}
-	b, _ := json.Marshal(report)
-	req, _ := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
-	req = req.WithContext(ctx)
-	res, _ := http.DefaultClient.Do(req)
+	b, err := json.Marshal(report)
+	if err != nil {
+		logErr(fmt.Errorf("unable to marshal JSON: %w", err))
+	}
+	req, err := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
+	if err != nil {
+		logErr(fmt.Errorf("unable to create new request: %w", err))
+	}
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
+	}
 	defer func() {
 		if err := res.Body.Close(); err != nil {
 			logErr(err)
@@ -125,13 +134,6 @@ func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) 
 	return context.WithValue(ctx, metadataKey, m)
 }
 
-func metadata(ctx context.Context) map[string]map[string]interface{} {
-	if m, ok := ctx.Value(metadataKey).(map[string]map[string]interface{}); ok {
-		return m
-	}
-	return nil
-}
-
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
 	m := metadata(ctx)
 	if m == nil {
@@ -142,4 +144,11 @@ func initializeMetadataTab(ctx context.Context, tab string) map[string]map[strin
 		m[tab] = map[string]interface{}{}
 	}
 	return m
+}
+
+func metadata(ctx context.Context) map[string]map[string]interface{} {
+	if m, ok := ctx.Value(metadataKey).(map[string]map[string]interface{}); ok {
+		return m
+	}
+	return nil
 }
