@@ -61,7 +61,7 @@ func makeEvents(ctx context.Context, cfg *Configuration, err error) []*EventPayl
 			App:            makeAppPayload(cfg),
 			Device:         cfg.makeDevicePayload(),
 			Session:        ctxData.session,
-			Metadata:       metadata(ctx),
+			Metadata:       ctxData.metadata,
 		},
 	}
 }
