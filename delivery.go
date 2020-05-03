@@ -85,7 +85,7 @@ func extractInnermostCtx(ctx context.Context, err error, unhandled bool) *ctxDat
 		breadcrumbs: makeBreadcrumbs(ctx),
 		user:        makeUser(ctx),
 		session:     makeReportSessionPayload(ctx, unhandled),
-		metadata:    metadata(ctx),
+		metadata:    Metadata(ctx),
 	}
 	var e error = err
 	for {
@@ -259,7 +259,7 @@ func (data *ctxData) updateFromCtx(ctx context.Context, unhandled bool) {
 		data.session = dataSession
 	}
 
-	dataMetadata := metadata(ctx)
+	dataMetadata := Metadata(ctx)
 	if dataMetadata == nil {
 		return
 	}

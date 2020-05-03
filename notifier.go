@@ -135,7 +135,7 @@ func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) 
 }
 
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
-	m := metadata(ctx)
+	m := Metadata(ctx)
 	if m == nil {
 		m = map[string]map[string]interface{}{}
 	}
@@ -146,7 +146,9 @@ func initializeMetadataTab(ctx context.Context, tab string) map[string]map[strin
 	return m
 }
 
-func metadata(ctx context.Context) map[string]map[string]interface{} {
+// Metadata pulls out all the metadata known by this package as a
+// map[tab]map[key]value from the given context.
+func Metadata(ctx context.Context) map[string]map[string]interface{} {
 	if m, ok := ctx.Value(metadataKey).(map[string]map[string]interface{}); ok {
 		return m
 	}
