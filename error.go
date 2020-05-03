@@ -58,10 +58,10 @@ func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interfa
 		stacktrace: makeStacktrace(n.cfg.runtimeConstants.modulePath),
 		ctx:        ctx,
 	}
-	if len(msgAndFmtArgs) > 1 {
+	if len(msgAndFmtArgs) >= 1 {
 		msg, ok := msgAndFmtArgs[0].(string)
 		if ok {
-			msg = fmt.Sprintf(msg, msgAndFmtArgs[1:])
+			msg = fmt.Sprintf(msg, msgAndFmtArgs[1:]...)
 			berr.msg = fmt.Sprintf("%s: %s", msg, err.Error())
 		}
 	}

@@ -110,14 +110,14 @@ func TestMakeExceptions(t *testing.T) {
 			"stacktrace": null
 		}, {
 			"errorClass": "*bugsnag.Error",
-			"message": "3rd error ([bugsnag].(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
+			"message": "3rd error (bugsnag.(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
 			"stacktrace": [
 				{"file":"<<PRESENCE>>","inProject":false,"lineNumber":909,"method":"testing.tRunner"},
 				{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
 			]
 		}, {
 			"errorClass": "*fmt.wrapError",
-			"message": "4th error (fmt.Errorf('percent-w')): 3rd error ([bugsnag].(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
+			"message": "4th error (fmt.Errorf('percent-w')): 3rd error (bugsnag.(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
 			"stacktrace": null
 		}
 	]`)
