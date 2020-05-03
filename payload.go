@@ -142,6 +142,11 @@ type EventPayload struct {
 	// event. The key of the outermost map indicates the tab under which to display this information in Bugsnag.
 	// The key of the innermost map indicates the property name, and the value is it's value
 	Metadata map[string]map[string]interface{} `json:"metaData,omitempty"`
+
+	// GroupingHash is a unique value that can be set in order to override the
+	// grouping on the Bugsnag dashboard.
+	//  **Warning: Do not set unless you're 100% sure of what you're doing.**
+	GroupingHash string `json:"groupingHash,omitempty"`
 }
 
 // ExceptionPayload is the error or panic that occurred during this the surrounding event.
