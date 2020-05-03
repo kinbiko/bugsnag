@@ -101,12 +101,8 @@ func TestMakeExceptions(t *testing.T) {
 
 	jsonassert.New(t).Assertf(string(payload), `[
 		{
-			"errorClass": "*errors.errorString",
-			"message": "1st error (errors.New)",
-			"stacktrace": null
-		}, {
-			"errorClass": "*errors.withStack",
-			"message": "2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
+			"errorClass": "*fmt.wrapError",
+			"message": "4th error (fmt.Errorf('percent-w')): 3rd error (bugsnag.(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
 			"stacktrace": null
 		}, {
 			"errorClass": "*bugsnag.Error",
@@ -116,8 +112,12 @@ func TestMakeExceptions(t *testing.T) {
 				{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
 			]
 		}, {
-			"errorClass": "*fmt.wrapError",
-			"message": "4th error (fmt.Errorf('percent-w')): 3rd error (bugsnag.(*Notifier).Wrap): 2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
+			"errorClass": "*errors.withStack",
+			"message": "2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
+			"stacktrace": null
+		}, {
+			"errorClass": "*errors.errorString",
+			"message": "1st error (errors.New)",
 			"stacktrace": null
 		}
 	]`)

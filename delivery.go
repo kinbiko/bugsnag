@@ -165,7 +165,7 @@ func makeExceptions(err error) []*ExceptionPayload {
 		if berr, ok := err.(*Error); ok {
 			ep.Stacktrace = berr.stacktrace
 		}
-		eps[i] = ep
+		eps[len(errs)-i-1] = ep // reverse the order to match the API
 	}
 	return eps
 }

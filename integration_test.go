@@ -104,10 +104,6 @@ func TestIntegration(t *testing.T) {
 				],
 				"exceptions": [
 					{
-						"errorClass": "*errors.errorString",
-						"message": "oh ploppers",
-						"stacktrace": null
-					}, {
 						"errorClass": "*bugsnag.Error",
 						"message": "oh ploppers",
 						"stacktrace": [
@@ -115,6 +111,10 @@ func TestIntegration(t *testing.T) {
 							{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
 							{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
 						]
+					}, {
+						"errorClass": "*errors.errorString",
+						"message": "oh ploppers",
+						"stacktrace": null
 					}
 				]
 			}
