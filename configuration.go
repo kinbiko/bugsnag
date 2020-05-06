@@ -45,10 +45,10 @@ func (cfg *Configuration) validate() error {
 	}
 
 	if !validURL(cfg.EndpointNotify) {
-		return fmt.Errorf(`notify endpoint be avalid URL, got "%s"`, cfg.EndpointNotify)
+		return fmt.Errorf(`notify endpoint be a valid URL, got "%s"`, cfg.EndpointNotify)
 	}
 	if !validURL(cfg.EndpointSessions) {
-		return fmt.Errorf(`sessions endpoint be avalid URL, got "%s"`, cfg.EndpointSessions)
+		return fmt.Errorf(`sessions endpoint be a valid URL, got "%s"`, cfg.EndpointSessions)
 	}
 	return nil
 }

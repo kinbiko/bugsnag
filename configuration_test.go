@@ -50,7 +50,7 @@ func TestConfigurationValidation(t *testing.T) {
 				EndpointNotify:   "fluff",
 				EndpointSessions: "https://sessions.bugsnag.com",
 			},
-			expMsg: `notify endpoint be avalid URL, got "fluff"`,
+			expMsg: `notify endpoint be a valid URL, got "fluff"`,
 		},
 		{
 			name: "notify endpoint not a url",
@@ -59,7 +59,7 @@ func TestConfigurationValidation(t *testing.T) {
 				EndpointNotify:   "https://notify.bugsnag.com",
 				EndpointSessions: "fluff",
 			},
-			expMsg: `sessions endpoint be avalid URL, got "fluff"`,
+			expMsg: `sessions endpoint be a valid URL, got "fluff"`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
