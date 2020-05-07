@@ -56,27 +56,27 @@ func (cfg *Configuration) validate() error {
 type runtimeConstants struct {
 	hostname, osVersion, goVersion, osName string
 
-	// modulePath defines the root of the project that uses this package.
-	// Used to identify if a file is "in-project" or a third party library,
-	// which is in turn used by Bugsnag to group errors by the top stackframe
-	// that's "in project".
-	modulePath   string
 	appStartTime time.Time
 }
 
 func makeRuntimeConstants() runtimeConstants {
 	hostname, _ := os.Hostname()
-
-	modulePath := ""
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		modulePath = bi.Main.Path
-	}
 	return runtimeConstants{
 		hostname:     hostname,
 		osVersion:    osVersion(),
 		goVersion:    runtime.Version(),
 		osName:       runtime.GOOS,
-		modulePath:   modulePath,
 		appStartTime: time.Now(),
 	}
+}
+
+// makeModulePath defines the root of the project that uses this package.
+// Used to identify if a file is "in-project" or a third party library,
+// which is in turn used by Bugsnag to group errors by the top stackframe
+// that's "in project".
+func makeModulePath() string {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		return bi.Main.Path
+	}
+	return ""
 }
