@@ -123,14 +123,14 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestReportSerialization(t *testing.T) {
-	payload, err := json.Marshal(&bugsnag.ReportPayload{
+	payload, err := json.Marshal(&bugsnag.JSONErrorReport{
 		APIKey: "hello",
-		Notifier: &bugsnag.NotifierPayload{
+		Notifier: &bugsnag.JSONNotifier{
 			Name:    "My custom notifier",
 			Version: "1.2.3",
 			URL:     "https://github.com/kinbiko/bugsnag",
 		},
-		Events: []*bugsnag.EventPayload{
+		Events: []*bugsnag.JSONEvent{
 			{
 
 				PayloadVersion: "5",
@@ -138,9 +138,9 @@ func TestReportSerialization(t *testing.T) {
 				Unhandled:      true,
 				Severity:       "info",
 
-				SeverityReason: &bugsnag.SeverityReasonPayload{Type: "log"},
+				SeverityReason: &bugsnag.JSONSeverityReason{Type: "log"},
 
-				Breadcrumbs: []*bugsnag.BreadcrumbPayload{
+				Breadcrumbs: []*bugsnag.JSONBreadcrumb{
 					{
 						Timestamp: "2016-07-19T12:17:27-0700",
 						Name:      "Error log",
@@ -149,7 +149,7 @@ func TestReportSerialization(t *testing.T) {
 					},
 				},
 
-				Request: &bugsnag.RequestPayload{
+				Request: &bugsnag.JSONRequest{
 					ClientIP:   "127.0.0.1",
 					HTTPMethod: "GET",
 					URL:        "http://example.com/users/19/settings",
@@ -161,13 +161,13 @@ func TestReportSerialization(t *testing.T) {
 					},
 				},
 
-				User: &bugsnag.User{
+				User: &bugsnag.JSONUser{
 					ID:    "5134",
 					Name:  "Angus MacGyver",
 					Email: "mac@phoenix.example.com",
 				},
 
-				App: &bugsnag.AppPayload{
+				App: &bugsnag.JSONApp{
 					ID:           "61387",
 					Version:      "5.2.3",
 					ReleaseStage: "production",
@@ -175,17 +175,17 @@ func TestReportSerialization(t *testing.T) {
 					Duration:     1234,
 				},
 
-				Device: &bugsnag.DevicePayload{
+				Device: &bugsnag.JSONDevice{
 					Hostname:        "web1.internal",
 					OSName:          "android",
 					OSVersion:       "8.0.1",
 					RuntimeVersions: map[string]string{"go": "1.11.2"},
 				},
 
-				Session: &bugsnag.SessionPayload{
+				Session: &bugsnag.JSONSession{
 					ID:        "67178",
 					StartedAt: "2018-06-07T10:16:34.564Z",
-					Events:    &bugsnag.SessionEventsPayload{Handled: 5, Unhandled: 2},
+					Events:    &bugsnag.JSONSessionEvents{Handled: 5, Unhandled: 2},
 				},
 
 				Metadata: map[string]map[string]interface{}{
@@ -194,11 +194,11 @@ func TestReportSerialization(t *testing.T) {
 					},
 				},
 
-				Exceptions: []*bugsnag.ExceptionPayload{
+				Exceptions: []*bugsnag.JSONException{
 					{
 						ErrorClass: "RandomError",
 						Message:    "Something went terribly wrong",
-						Stacktrace: []*bugsnag.StackframePayload{
+						Stacktrace: []*bugsnag.JSONStackframe{
 							{
 								File:       "cool.go",
 								LineNumber: 41,

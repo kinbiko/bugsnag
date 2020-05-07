@@ -14,7 +14,7 @@ import (
 type session struct {
 	ID          uuid.UUID
 	StartedAt   time.Time
-	EventCounts *SessionEventsPayload
+	EventCounts *JSONSessionEvents
 }
 
 // StartSession attaches Bugsnag session data to a copy of the given
@@ -26,7 +26,7 @@ func (n *Notifier) StartSession(ctx context.Context) context.Context {
 	session := &session{
 		StartedAt:   time.Now(),
 		ID:          sessionID,
-		EventCounts: &SessionEventsPayload{},
+		EventCounts: &JSONSessionEvents{},
 	}
 	n.sessionChannel <- session
 	return context.WithValue(ctx, sessionKey, session)
@@ -64,7 +64,7 @@ func (n *Notifier) flushSessions() {
 }
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {
-	payload, err := json.Marshal(makeSessionPayload(cfg, sessions))
+	payload, err := json.Marshal(makeJSONSessionReport(cfg, sessions))
 	if err != nil {
 		return fmt.Errorf("unable to marshal json: %v", err)
 	}
@@ -109,12 +109,12 @@ func incrementEventCountAndGetSession(ctx context.Context, unhandled bool) *sess
 	return session
 }
 
-func makeReportSessionPayload(ctx context.Context, unhandled bool) *SessionPayload {
+func makeJSONSession(ctx context.Context, unhandled bool) *JSONSession {
 	if sess := incrementEventCountAndGetSession(ctx, unhandled); sess != nil {
-		return &SessionPayload{
+		return &JSONSession{
 			ID:        sess.ID.String(),
 			StartedAt: sess.StartedAt.Format(time.RFC3339),
-			Events: &SessionEventsPayload{
+			Events: &JSONSessionEvents{
 				Handled:   sess.EventCounts.Handled,
 				Unhandled: sess.EventCounts.Unhandled,
 			},
@@ -123,12 +123,12 @@ func makeReportSessionPayload(ctx context.Context, unhandled bool) *SessionPaylo
 	return nil
 }
 
-func makeSessionPayload(cfg *Configuration, sessions []*session) *sessionPayload {
-	return &sessionPayload{
+func makeJSONSessionReport(cfg *Configuration, sessions []*session) *JSONSessionReport {
+	return &JSONSessionReport{
 		Notifier: makeNotifier(),
-		App:      makeAppPayload(cfg),
-		Device:   cfg.makeDevicePayload(),
-		SessionCounts: []sessionCountsPayload{
+		App:      makeJSONApp(cfg),
+		Device:   cfg.makeJSONDevice(),
+		SessionCounts: []JSONSessionCounts{
 			{
 				// This timestamp assumes that the sessions happen at more or
 				// less the same point in time

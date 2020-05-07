@@ -29,7 +29,7 @@ type Notifier struct {
 // This context will be attached to the http.Request used for the request to
 // Bugsnag, so you are also free to set deadlines etc as you see fit.
 type ErrorReportSanitizer interface {
-	SanitizeErrorReport(ctx context.Context, p *ReportPayload) context.Context
+	SanitizeErrorReport(ctx context.Context, p *JSONErrorReport) context.Context
 }
 
 type ctxKey int
@@ -98,6 +98,22 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 			logErr(err)
 		}
 	}()
+}
+
+// User information about the user affected by the error. These fields are
+// optional but highly recommended. To display custom user data alongside these
+// standard fields on the Bugsnag website, the custom data should be included
+// in the metaData object in a user object.
+type User struct {
+	// ID is a unique identifier for a user affected by the event.
+	// This could be any distinct identifier that makes sense for your app.
+	ID string `json:"id,omitempty"`
+
+	// Name is a human readable name of the user affected.
+	Name string `json:"name,omitempty"`
+
+	// Email is the user's email address, if known.
+	Email string `json:"email,omitempty"`
 }
 
 // WithUser attaches the given User data to the given context, such that it can

@@ -85,7 +85,7 @@ func WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
 	return context.WithValue(ctx, breadcrumbKey, []Breadcrumb{b})
 }
 
-func makeBreadcrumbs(ctx context.Context) []*BreadcrumbPayload {
+func makeBreadcrumbs(ctx context.Context) []*JSONBreadcrumb {
 	val := ctx.Value(breadcrumbKey)
 	if val == nil {
 		return nil
@@ -96,9 +96,9 @@ func makeBreadcrumbs(ctx context.Context) []*BreadcrumbPayload {
 		return nil
 	}
 
-	payloads := make([]*BreadcrumbPayload, len(bcs))
+	payloads := make([]*JSONBreadcrumb, len(bcs))
 	for i, bc := range bcs {
-		payloads[i] = &BreadcrumbPayload{
+		payloads[i] = &JSONBreadcrumb{
 			Timestamp: bc.timestamp.Format(time.RFC3339),
 			Name:      bc.Name,
 			Type:      bc.Type.val(),

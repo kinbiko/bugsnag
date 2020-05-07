@@ -3,20 +3,20 @@ package bugsnag
 // === SHARED ===
 // The following payloads are shared between session and report payloads
 
-// NotifierPayload describes the package that triggers the sending of this
+// JSONNotifier describes the package that triggers the sending of this
 // report (the 'notifier').  These properties are used within Bugsnag to track
 // error rates from a notifier.
-type NotifierPayload struct {
+type JSONNotifier struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`
 	URL     string `json:"url"`
 }
 
-// AppPayload is information about the app where the error occurred. These
+// JSONApp is information about the app where the error occurred. These
 // fields are optional but highly recommended. To display custom app data
 // alongside these standard fields on the Bugsnag website, the custom data
 // should be included in the metaData object in an app object.
-type AppPayload struct {
+type JSONApp struct {
 	// ID is a unique ID for the application
 	ID string `json:"id,omitempty"`
 
@@ -35,11 +35,11 @@ type AppPayload struct {
 	Duration int64 `json:"duration,omitempty"`
 }
 
-// DevicePayload is information about the computer/device running the app.
+// JSONDevice is information about the computer/device running the app.
 // These fields are optional but highly recommended. To display custom device
 // data alongside these standard fields on the Bugsnag website, the custom data
 // should be included in the metaData object in a device object.
-type DevicePayload struct {
+type JSONDevice struct {
 	// Rather than faff about with trying to find something that matches the
 	// API exactly, just fit all easily fetchable memory data and abuse
 	// the fact you can just add to the device struct whatever you want.
@@ -62,16 +62,16 @@ type DevicePayload struct {
 // === SESSION ===
 // The following payloads only apply to sessions
 
-// sessionPayload defines the top level payload object
-type sessionPayload struct {
-	Notifier      *NotifierPayload       `json:"notifier"`
-	App           *AppPayload            `json:"app"`
-	Device        *DevicePayload         `json:"device"`
-	SessionCounts []sessionCountsPayload `json:"sessionCounts"`
+// JSONSessionReport defines the top level payload object
+type JSONSessionReport struct {
+	Notifier      *JSONNotifier       `json:"notifier"`
+	App           *JSONApp            `json:"app"`
+	Device        *JSONDevice         `json:"device"`
+	SessionCounts []JSONSessionCounts `json:"sessionCounts"`
 }
 
-// sessionCountsPayload defines the .sessionCounts subobject of the payload
-type sessionCountsPayload struct {
+// JSONSessionCounts defines the .sessionCounts subobject of the payload
+type JSONSessionCounts struct {
 	StartedAt       string `json:"startedAt"`
 	SessionsStarted int    `json:"sessionsStarted"`
 }
@@ -79,23 +79,22 @@ type sessionCountsPayload struct {
 // === REPORT ===
 // The following payloads only apply to reports
 
-// The types written in this package is written against the API defined here:
+// The types written in this file is written against the API defined here:
 // https://bugsnagerrorreportingapi.docs.apiary.io/#reference/0/notify/send-error-reports
-// Not everything is applicable to Go apps.
 
-// ReportPayload is the top level struct that encompasses the entire payload that's
+// JSONErrorReport is the top level struct that encompasses the entire payload that's
 // being sent to the Bugsnag's servers upon reporting an error.
-type ReportPayload struct {
+type JSONErrorReport struct {
 	// The API Key associated with the project. Informs Bugsnag which project has generated this error.
 	// This is provided for legacy notifiers. It is preferable to use the Bugsnag-Api-Key header instead.
 	APIKey string `json:"apiKey"`
 
-	Notifier *NotifierPayload `json:"notifier"`
-	Events   []*EventPayload  `json:"events"`
+	Notifier *JSONNotifier `json:"notifier"`
+	Events   []*JSONEvent  `json:"events"`
 }
 
-// EventPayload is the event that Bugsnag should be notified of.
-type EventPayload struct {
+// JSONEvent is the event that Bugsnag should be notified of.
+type JSONEvent struct {
 	// The version number of the payload. This is provided for legacy notifiers.
 	// It is preferable to use the Bugsnag-Payload-Version header instead.
 	PayloadVersion string `json:"payloadVersion,omitempty"`
@@ -118,25 +117,25 @@ type EventPayload struct {
 	// Severity does not affect the stability score in your dashboard.
 	Severity string `json:"severity"`
 
-	SeverityReason *SeverityReasonPayload `json:"severityReason,omitempty"`
+	SeverityReason *JSONSeverityReason `json:"severityReason,omitempty"`
 
 	// Most of the time there will only be one exception, but multiple
 	// (nested/caused-by) errors may be added individually.
 	// The innermost error should be first in this array.
-	Exceptions []*ExceptionPayload `json:"exceptions,omitempty"`
+	Exceptions []*JSONException `json:"exceptions,omitempty"`
 
 	// This list is sequential and ordered newest to oldest.
-	Breadcrumbs []*BreadcrumbPayload `json:"breadcrumbs,omitempty"`
+	Breadcrumbs []*JSONBreadcrumb `json:"breadcrumbs,omitempty"`
 
-	Request *RequestPayload `json:"request,omitempty"`
+	Request *JSONRequest `json:"request,omitempty"`
 
-	User *User `json:"user,omitempty"`
+	User *JSONUser `json:"user,omitempty"`
 
-	App *AppPayload `json:"app,omitempty"`
+	App *JSONApp `json:"app,omitempty"`
 
-	Device *DevicePayload `json:"device,omitempty"`
+	Device *JSONDevice `json:"device,omitempty"`
 
-	Session *SessionPayload `json:"session,omitempty"`
+	Session *JSONSession `json:"session,omitempty"`
 
 	// An object containing any further data you wish to attach to this error
 	// event. The key of the outermost map indicates the tab under which to display this information in Bugsnag.
@@ -149,8 +148,8 @@ type EventPayload struct {
 	GroupingHash string `json:"groupingHash,omitempty"`
 }
 
-// ExceptionPayload is the error or panic that occurred during this the surrounding event.
-type ExceptionPayload struct {
+// JSONException is the error or panic that occurred during this the surrounding event.
+type JSONException struct {
 	// The name of the type of error/panic which occurred. This is used to
 	// group errors together so should not ocntain any contextual information
 	// that would prevent correct grouping.
@@ -161,13 +160,13 @@ type ExceptionPayload struct {
 	// used to group the errors.
 	Message string `json:"message,omitempty"`
 
-	Stacktrace []*StackframePayload `json:"stacktrace"`
+	Stacktrace []*JSONStackframe `json:"stacktrace"`
 }
 
-// StackframePayload represents one line in the Exception's stacktrace.
+// JSONStackframe represents one line in the Exception's stacktrace.
 // Bugsnag uses this information to help with error grouping, as well as
 // displaying it to the user.
-type StackframePayload struct {
+type JSONStackframe struct {
 	// File identifies the name of the file that this frame of the stack was in.
 	// This name should be stripped of any unnecessary from the beginning of the path.
 	// In addition to error grouping, Bugsnag is able to go to the correct file
@@ -187,9 +186,9 @@ type StackframePayload struct {
 	InProject bool `json:"inProject"`
 }
 
-// BreadcrumbPayload represents user- and system-initiated events which led up
+// JSONBreadcrumb represents user- and system-initiated events which led up
 // to an error, providing additional context.
-type BreadcrumbPayload struct {
+type JSONBreadcrumb struct {
 	// The time at which the event breadcrumb occurred, in ISO8601
 	Timestamp string `json:"timestamp,omitempty"`
 
@@ -204,11 +203,11 @@ type BreadcrumbPayload struct {
 	Metadata map[string]interface{} `json:"metaData,omitempty"`
 }
 
-// RequestPayload contains details about the web request from the client that
+// JSONRequest contains details about the web request from the client that
 // experienced the error, if relevant. To display custom request data alongside
 // these standard fields on the Bugsnag website, the custom data should be
 // included in the metaData object in a request object.
-type RequestPayload struct {
+type JSONRequest struct {
 	// ClientIP identifies the IP address of the client that sent the request that caused the error.
 	ClientIP string `json:"clientIp,omitempty"`
 
@@ -221,9 +220,9 @@ type RequestPayload struct {
 	Referer string `json:"referer,omitempty"`
 }
 
-// SeverityReasonPayload contains information about why the severity was
+// JSONSeverityReason contains information about why the severity was
 // picked.
-type SeverityReasonPayload struct {
+type JSONSeverityReason struct {
 	// "handledPanic" should be used when a panic has been recovered.
 	// "unhandledPanic" should be used when a panic has happened without being recovered.
 	// "handledError" should be used when reporting an error
@@ -234,38 +233,28 @@ type SeverityReasonPayload struct {
 	Type string `json:"type,omitempty"`
 }
 
-// User information about the user affected by the error. These fields are
+// JSONUser is user information about the user affected by the error. These fields are
 // optional but highly recommended. To display custom user data alongside these
 // standard fields on the Bugsnag website, the custom data should be included
 // in the metaData object in a user object.
-type User struct {
-	// ID is a unique identifier for a user affected by the event.
-	// This could be any distinct identifier that makes sense for your app.
-	ID string `json:"id,omitempty"`
+type JSONUser = User
 
-	// Name is a human readable name of the user affected.
-	Name string `json:"name,omitempty"`
-
-	// Email is the user's email address, if known.
-	Email string `json:"email,omitempty"`
-}
-
-// SessionPayload is information associated with the event. This can be used
+// JSONSession is information associated with the event. This can be used
 // alongside the Bugsnag Session Tracking API to associate the event with a
 // session so that a release's crash rate can be determined.
-type SessionPayload struct {
+type JSONSession struct {
 	// ID is a unique identifier of this session.
 	ID string `json:"id"`
 
 	// The time (in ISO8601 format) at which the session started.
 	StartedAt string `json:"startedAt"`
 
-	Events *SessionEventsPayload `json:"events"`
+	Events *JSONSessionEvents `json:"events"`
 }
 
-// SessionEventsPayload contain details of the number of handled and unhandled events
+// JSONSessionEvents contain details of the number of handled and unhandled events
 // that happened as part of this session (including this event).
-type SessionEventsPayload struct {
+type JSONSessionEvents struct {
 	// The number of handled events that have occurred in this session (including this event).
 	Handled int `json:"handled,omitempty"`
 	// The number of unhandled events that have occurred in this session

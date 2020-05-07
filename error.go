@@ -24,7 +24,7 @@ type Error struct {
 	Severity  severity
 
 	ctx        context.Context
-	stacktrace []*StackframePayload
+	stacktrace []*JSONStackframe
 	msg        string
 }
 
@@ -68,13 +68,13 @@ func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interfa
 	return berr
 }
 
-func makeStacktrace(module string) []*StackframePayload {
+func makeStacktrace(module string) []*JSONStackframe {
 	ptrs := [50]uintptr{}
 	// Skip 0 frames as we strip this manually later by ignoring any frames
 	// including github.com/kinbiko/bugsnag (or below).
 	pcs := ptrs[0:runtime.Callers(0, ptrs[:])]
 
-	stacktrace := make([]*StackframePayload, len(pcs))
+	stacktrace := make([]*JSONStackframe, len(pcs))
 	for i, pc := range pcs {
 		pc-- // pc - 1 is the *real* program counter, for reasons beyond me.
 
@@ -85,7 +85,7 @@ func makeStacktrace(module string) []*StackframePayload {
 		}
 		inProject := module != "" && strings.Contains(method, module) || strings.Contains(method, "main.main")
 
-		stacktrace[i] = &StackframePayload{File: file, LineNumber: lineNumber, Method: method, InProject: inProject}
+		stacktrace[i] = &JSONStackframe{File: file, LineNumber: lineNumber, Method: method, InProject: inProject}
 	}
 
 	// Drop any frames from this package, and further down, for example Go
