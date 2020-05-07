@@ -83,10 +83,6 @@ func TestMakeExceptions(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Need to set this, as tests don't count as 'main' packages, which means
-	// that the 'github.com/kinbiko/bugsnag' package won't be picked up
-	// automatically
-	n.cfg.runtimeConstants.modulePath = "github.com/kinbiko/bugsnag"
 
 	ctx := WithBugsnagContext(context.Background(), "/api/user/1523")
 	ctx = WithMetadatum(ctx, "tab", "one", "1")
