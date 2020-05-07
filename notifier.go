@@ -29,7 +29,7 @@ type Notifier struct {
 // This context will be attached to the http.Request used for the request to
 // Bugsnag, so you are also free to set deadlines etc as you see fit.
 type ErrorReportSanitizer interface {
-	Sanitize(ctx context.Context, p *ReportPayload) context.Context
+	SanitizeErrorReport(ctx context.Context, p *ReportPayload) context.Context
 }
 
 type ctxKey int
@@ -74,7 +74,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	}
 	report := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		ctx = sanitizer.Sanitize(context.Background(), report)
+		ctx = sanitizer.SanitizeErrorReport(context.Background(), report)
 		if ctx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
