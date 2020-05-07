@@ -27,7 +27,7 @@ func TestApp(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			tc.cfg.appStartTime = time.Now().Add(-5 * time.Second)
-			payload, err := json.Marshal(makeAppPayload(tc.cfg))
+			payload, err := json.Marshal(makeJSONApp(tc.cfg))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -45,7 +45,7 @@ func TestDevice(t *testing.T) {
 			osName:    "linux innit",
 		},
 	}
-	payload, err := json.Marshal(cfg.makeDevicePayload())
+	payload, err := json.Marshal(cfg.makeJSONDevice())
 	if err != nil {
 		t.Fatal(err)
 	}

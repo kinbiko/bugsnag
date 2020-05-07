@@ -31,35 +31,35 @@ type causer interface {
 
 type ctxData struct {
 	bContext    string
-	breadcrumbs []*BreadcrumbPayload
+	breadcrumbs []*JSONBreadcrumb
 	user        *User
-	session     *SessionPayload
+	session     *JSONSession
 	metadata    map[string]map[string]interface{}
 }
 
-func (n *Notifier) makeReport(ctx context.Context, err error) *ReportPayload {
-	return &ReportPayload{
+func (n *Notifier) makeReport(ctx context.Context, err error) *JSONErrorReport {
+	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
 		Notifier: makeNotifier(),
 		Events:   makeEvents(ctx, n.cfg, err),
 	}
 }
 
-func makeEvents(ctx context.Context, cfg *Configuration, err error) []*EventPayload {
+func makeEvents(ctx context.Context, cfg *Configuration, err error) []*JSONEvent {
 	unhandled := makeUnhandled(err)
 	ctxData := extractInnermostCtx(ctx, err, unhandled)
-	return []*EventPayload{
+	return []*JSONEvent{
 		{
 			PayloadVersion: "5",
 			Context:        ctxData.bContext,
 			Unhandled:      unhandled,
 			Severity:       makeSeverity(err),
-			SeverityReason: &SeverityReasonPayload{Type: severityReasonType(err)},
+			SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
 			Exceptions:     makeExceptions(err),
 			Breadcrumbs:    ctxData.breadcrumbs,
 			User:           ctxData.user,
-			App:            makeAppPayload(cfg),
-			Device:         cfg.makeDevicePayload(),
+			App:            makeJSONApp(cfg),
+			Device:         cfg.makeJSONDevice(),
 			Session:        ctxData.session,
 			Metadata:       ctxData.metadata,
 		},
@@ -84,7 +84,7 @@ func extractInnermostCtx(ctx context.Context, err error, unhandled bool) *ctxDat
 		bContext:    makeContext(ctx),
 		breadcrumbs: makeBreadcrumbs(ctx),
 		user:        makeUser(ctx),
-		session:     makeReportSessionPayload(ctx, unhandled),
+		session:     makeJSONSession(ctx, unhandled),
 		metadata:    Metadata(ctx),
 	}
 	var e error = err
@@ -138,7 +138,7 @@ func severityReasonType(err error) string {
 	return prefix + suffix
 }
 
-func makeExceptions(err error) []*ExceptionPayload {
+func makeExceptions(err error) []*JSONException {
 	var errs []error
 	for {
 		if err == nil {
@@ -159,9 +159,9 @@ func makeExceptions(err error) []*ExceptionPayload {
 		}
 	}
 
-	eps := make([]*ExceptionPayload, len(errs))
+	eps := make([]*JSONException, len(errs))
 	for i, err := range errs {
-		ep := &ExceptionPayload{ErrorClass: reflect.TypeOf(err).String(), Message: err.Error()}
+		ep := &JSONException{ErrorClass: reflect.TypeOf(err).String(), Message: err.Error()}
 		if berr, ok := err.(*Error); ok {
 			ep.Stacktrace = berr.stacktrace
 		}
@@ -170,16 +170,16 @@ func makeExceptions(err error) []*ExceptionPayload {
 	return eps
 }
 
-func makeAppPayload(cfg *Configuration) *AppPayload {
-	return &AppPayload{
+func makeJSONApp(cfg *Configuration) *JSONApp {
+	return &JSONApp{
 		Version:      cfg.AppVersion,
 		ReleaseStage: cfg.ReleaseStage,
 		Duration:     time.Since(cfg.appStartTime).Milliseconds(),
 	}
 }
 
-func (c *runtimeConstants) makeDevicePayload() *DevicePayload {
-	return &DevicePayload{
+func (c *runtimeConstants) makeJSONDevice() *JSONDevice {
+	return &JSONDevice{
 		Hostname:        c.hostname,
 		OSName:          c.osName,
 		OSVersion:       c.osVersion,
@@ -237,8 +237,8 @@ func logErr(err error) {
 	fmt.Fprintf(os.Stderr, "ERROR (bugsnag): %s\n", err.Error())
 }
 
-func makeNotifier() *NotifierPayload {
-	return &NotifierPayload{
+func makeNotifier() *JSONNotifier {
+	return &JSONNotifier{
 		Name:    "Alternative Go Notifier",
 		URL:     "https://github.com/kinbiko/bugsnag",
 		Version: notifierVersion,
@@ -255,7 +255,7 @@ func (data *ctxData) updateFromCtx(ctx context.Context, unhandled bool) {
 	if dataUser := makeUser(ctx); dataUser != nil {
 		data.user = dataUser
 	}
-	if dataSession := makeReportSessionPayload(ctx, unhandled); dataSession != nil {
+	if dataSession := makeJSONSession(ctx, unhandled); dataSession != nil {
 		data.session = dataSession
 	}
 
