@@ -125,7 +125,7 @@ func makeJSONSession(ctx context.Context, unhandled bool) *JSONSession {
 
 func makeJSONSessionReport(cfg *Configuration, sessions []*session) *JSONSessionReport {
 	return &JSONSessionReport{
-		Notifier: makeNotifier(),
+		Notifier: makeNotifier(cfg),
 		App:      makeJSONApp(cfg),
 		Device:   cfg.makeJSONDevice(),
 		SessionCounts: []JSONSessionCounts{

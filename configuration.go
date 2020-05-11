@@ -54,20 +54,34 @@ func (cfg *Configuration) validate() error {
 }
 
 type runtimeConstants struct {
-	hostname, osVersion, goVersion, osName string
+	hostname        string
+	osVersion       string
+	goVersion       string
+	osName          string
+	notifierVersion string
+	appID           string
 
 	appStartTime time.Time
 }
 
 func makeRuntimeConstants() runtimeConstants {
-	hostname, _ := os.Hostname()
-	return runtimeConstants{
-		hostname:     hostname,
+	rc := runtimeConstants{
 		osVersion:    osVersion(),
 		goVersion:    runtime.Version(),
 		osName:       runtime.GOOS,
 		appStartTime: time.Now(),
 	}
+	rc.hostname, _ = os.Hostname()
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		rc.appID = bi.Path
+		for _, dep := range bi.Deps {
+			if dep.Path == "github.com/kinbiko/bugsnag" {
+				rc.notifierVersion = dep.Version
+				break
+			}
+		}
+	}
+	return rc
 }
 
 // makeModulePath defines the root of the project that uses this package.

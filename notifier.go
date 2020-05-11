@@ -42,8 +42,6 @@ const (
 	metadataKey
 )
 
-const notifierVersion = "0.1.0" // extracted in order to make testing easier.
-
 // New constructs a new Notifier with the given configuration
 func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
 	if cfg.EndpointNotify == "" {
