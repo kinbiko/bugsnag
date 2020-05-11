@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
-	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -41,7 +40,7 @@ type ctxData struct {
 func (n *Notifier) makeReport(ctx context.Context, err error) *JSONErrorReport {
 	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
-		Notifier: makeNotifier(),
+		Notifier: makeNotifier(n.cfg),
 		Events:   makeEvents(ctx, n.cfg, err),
 	}
 }
@@ -172,19 +171,9 @@ func makeExceptions(err error) []*JSONException {
 }
 
 func makeJSONApp(cfg *Configuration) *JSONApp {
-	var (
-		id      string
-		version string = cfg.AppVersion
-	)
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		id = bi.Path
-		if version == "" {
-			version = bi.Main.Version
-		}
-	}
 	return &JSONApp{
-		ID:           id,
-		Version:      version,
+		Version:      cfg.AppVersion,
+		ID:           cfg.runtimeConstants.appID,
 		ReleaseStage: cfg.ReleaseStage,
 		Duration:     time.Since(cfg.appStartTime).Milliseconds(),
 	}
@@ -249,19 +238,11 @@ func logErr(err error) {
 	fmt.Fprintf(os.Stderr, "ERROR (bugsnag): %s\n", err.Error())
 }
 
-func makeNotifier() *JSONNotifier {
-	version := notifierVersion
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		for _, dep := range bi.Deps {
-			if dep.Path == "github.com/kinbiko/bugsnag" {
-				version = dep.Version
-			}
-		}
-	}
+func makeNotifier(cfg *Configuration) *JSONNotifier {
 	return &JSONNotifier{
 		Name:    "Alternative Go Notifier",
 		URL:     "https://github.com/kinbiko/bugsnag",
-		Version: version,
+		Version: cfg.runtimeConstants.notifierVersion,
 	}
 }
 
