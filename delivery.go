@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -171,8 +172,19 @@ func makeExceptions(err error) []*JSONException {
 }
 
 func makeJSONApp(cfg *Configuration) *JSONApp {
+	var (
+		id      string
+		version string = cfg.AppVersion
+	)
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		id = bi.Path
+		if version == "" {
+			version = bi.Main.Version
+		}
+	}
 	return &JSONApp{
-		Version:      cfg.AppVersion,
+		ID:           id,
+		Version:      version,
 		ReleaseStage: cfg.ReleaseStage,
 		Duration:     time.Since(cfg.appStartTime).Milliseconds(),
 	}
@@ -238,10 +250,18 @@ func logErr(err error) {
 }
 
 func makeNotifier() *JSONNotifier {
+	version := notifierVersion
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		for _, dep := range bi.Deps {
+			if dep.Path == "github.com/kinbiko/bugsnag" {
+				version = dep.Version
+			}
+		}
+	}
 	return &JSONNotifier{
 		Name:    "Alternative Go Notifier",
 		URL:     "https://github.com/kinbiko/bugsnag",
-		Version: notifierVersion,
+		Version: version,
 	}
 }
 
