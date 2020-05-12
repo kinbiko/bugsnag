@@ -50,6 +50,13 @@ func (cfg *Configuration) validate() error {
 	if !validURL(cfg.EndpointSessions) {
 		return fmt.Errorf(`sessions endpoint be a valid URL, got "%s"`, cfg.EndpointSessions)
 	}
+	if cfg.ReleaseStage == "" {
+		return fmt.Errorf("release stage must be set")
+	}
+	semverRegex := `v?([0-9]+)(\.[0-9]+)?(\.[0-9]+)?(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?`
+	if r := regexp.MustCompile(semverRegex); !r.Match([]byte(cfg.AppVersion)) {
+		return fmt.Errorf("app version must be valid semver")
+	}
 	return nil
 }
 
