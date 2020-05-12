@@ -14,6 +14,8 @@ func TestConfigurationValidation(t *testing.T) {
 				APIKey:           "b1234590abcabcabcabcddddddddabcd",
 				EndpointNotify:   "http://localhost:8080",
 				EndpointSessions: "https://sessions.bugsnag.com",
+				ReleaseStage:     "production",
+				AppVersion:       "1.2.3",
 			},
 		},
 		{
@@ -53,13 +55,44 @@ func TestConfigurationValidation(t *testing.T) {
 			expMsg: `notify endpoint be a valid URL, got "fluff"`,
 		},
 		{
-			name: "notify endpoint not a url",
+			name: "sessions endpoint not a url",
 			cfg: Configuration{
 				APIKey:           "b1234590abcabcabcabcddddddddabcd",
 				EndpointNotify:   "https://notify.bugsnag.com",
 				EndpointSessions: "fluff",
 			},
 			expMsg: `sessions endpoint be a valid URL, got "fluff"`,
+		},
+		{
+			name: "release stage missing",
+			cfg: Configuration{
+				APIKey:           "b1234590abcabcabcabcddddddddabcd",
+				EndpointNotify:   "https://notify.bugsnag.com",
+				EndpointSessions: "http://localhost:8080",
+			},
+			expMsg: `release stage must be set`,
+		},
+		{
+			name: "app version invalid",
+			cfg: Configuration{
+				APIKey:           "b1234590abcabcabcabcddddddddabcd",
+				EndpointNotify:   "https://notify.bugsnag.com",
+				EndpointSessions: "http://localhost:8080",
+				ReleaseStage:     "dev",
+				AppVersion:       "asdfbasdfbasdf",
+			},
+			expMsg: `app version must be valid semver`,
+		},
+		{
+			name: "app version invalid",
+			cfg: Configuration{
+				APIKey:           "b1234590abcabcabcabcddddddddabcd",
+				EndpointNotify:   "https://notify.bugsnag.com",
+				EndpointSessions: "http://localhost:8080",
+				ReleaseStage:     "dev",
+				AppVersion:       "",
+			},
+			expMsg: `app version must be valid semver`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -79,7 +79,7 @@ func TestMetadata(t *testing.T) {
 }
 
 func TestMakeExceptions(t *testing.T) {
-	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234"})
+	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 	if err != nil {
 		t.Fatal(err)
 	}
