@@ -59,25 +59,6 @@ func TestDevice(t *testing.T) {
 		}`)
 }
 
-func TestUserAndContext(t *testing.T) {
-	exp := User{ID: "id", Name: "name", Email: "email"}
-	if got := makeUser(WithUser(context.Background(), exp)); *got != exp {
-		t.Errorf("expected that when I add '%+v' to the context what I get back ('%+v') should be equal", exp, got)
-	}
-}
-
-func TestMetadata(t *testing.T) {
-	ctx := WithMetadatum(context.Background(), "app", "id", "15011-2")
-	ctx = WithMetadata(ctx, "device", map[string]interface{}{"model": "15023-2"})
-	md := Metadata(ctx)
-	if appID, exp := md["app"]["id"], "15011-2"; appID != exp {
-		t.Errorf("expected app.id to be '%s' but was '%s'", exp, appID)
-	}
-	if deviceModel, exp := md["device"]["model"], "15023-2"; deviceModel != exp {
-		t.Errorf("expected device.model to be '%s' but was '%s'", exp, deviceModel)
-	}
-}
-
 func TestMakeExceptions(t *testing.T) {
 	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 	if err != nil {
