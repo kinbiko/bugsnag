@@ -31,17 +31,17 @@ type Configuration struct {
 	runtimeConstants
 }
 
+func validURL(cand string) bool {
+	if _, err := url.ParseRequestURI(cand); err != nil {
+		return false
+	}
+	u, err := url.Parse(cand)
+	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
 func (cfg *Configuration) validate() error {
 	if r := regexp.MustCompile("^[0-9a-f]{32}$"); !r.Match([]byte(cfg.APIKey)) {
 		return fmt.Errorf(`API key must be 32 hex characters, but got "%s"`, cfg.APIKey)
-	}
-
-	validURL := func(cand string) bool {
-		if _, err := url.ParseRequestURI(cand); err != nil {
-			return false
-		}
-		u, err := url.Parse(cand)
-		return err == nil && u.Scheme != "" && u.Host != ""
 	}
 
 	if !validURL(cfg.EndpointNotify) {
