@@ -79,34 +79,6 @@ func makeUnhandled(err error) bool {
 	return false
 }
 
-func extractInnermostCtx(ctx context.Context, err error, unhandled bool) *ctxData {
-	data := &ctxData{
-		bContext:    makeContext(ctx),
-		breadcrumbs: makeBreadcrumbs(ctx),
-		user:        makeUser(ctx),
-		session:     makeJSONSession(ctx, unhandled),
-		metadata:    Metadata(ctx),
-	}
-	var e error = err
-	for {
-		if berr, ok := e.(*Error); ok {
-			ctx = berr.ctx
-			if ctx != nil {
-				data.updateFromCtx(ctx, unhandled)
-			}
-		}
-		e = errors.Unwrap(e)
-		if e == nil {
-			break
-		}
-	}
-
-	if data.bContext == "" {
-		data.bContext = err.Error()
-	}
-	return data
-}
-
 func makeSeverity(err error) string {
 	if berr := extractLowestBugsnagError(err); berr != nil {
 		if s := berr.Severity; s != severityUndetermined {
@@ -189,18 +161,6 @@ func (c *runtimeConstants) makeJSONDevice() *JSONDevice {
 	}
 }
 
-func makeUser(ctx context.Context) *User {
-	u := ctx.Value(userKey)
-	if u == nil {
-		return nil
-	}
-	user, ok := u.(*User)
-	if !ok {
-		return nil
-	}
-	return user
-}
-
 func memStats() map[string]interface{} {
 	m := &runtime.MemStats{}
 	runtime.ReadMemStats(m)
@@ -246,34 +206,6 @@ func makeNotifier(cfg *Configuration) *JSONNotifier {
 	}
 }
 
-func (data *ctxData) updateFromCtx(ctx context.Context, unhandled bool) {
-	if dataBContext := makeContext(ctx); dataBContext != "" {
-		data.bContext = dataBContext
-	}
-	if dataBreadcrumbs := makeBreadcrumbs(ctx); dataBreadcrumbs != nil {
-		data.breadcrumbs = dataBreadcrumbs
-	}
-	if dataUser := makeUser(ctx); dataUser != nil {
-		data.user = dataUser
-	}
-	if dataSession := makeJSONSession(ctx, unhandled); dataSession != nil {
-		data.session = dataSession
-	}
-
-	dataMetadata := Metadata(ctx)
-	if dataMetadata == nil {
-		return
-	}
-	if data.metadata == nil {
-		data.metadata = map[string]map[string]interface{}{}
-	}
-	for tab, kvps := range dataMetadata {
-		for k, v := range kvps {
-			data.metadata[tab][k] = v
-		}
-	}
-}
-
 func extractLowestBugsnagError(err error) *Error {
 	var berr *Error
 	for {
@@ -286,11 +218,4 @@ func extractLowestBugsnagError(err error) *Error {
 		}
 	}
 	return berr
-}
-
-func makeContext(ctx context.Context) string {
-	if v, ok := ctx.Value(contextKey).(string); ok {
-		return v
-	}
-	return ""
 }

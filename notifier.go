@@ -32,16 +32,6 @@ type ErrorReportSanitizer interface {
 	SanitizeErrorReport(ctx context.Context, p *JSONErrorReport) context.Context
 }
 
-type ctxKey int
-
-const (
-	sessionKey ctxKey = iota + 1
-	userKey
-	breadcrumbKey
-	contextKey
-	metadataKey
-)
-
 // New constructs a new Notifier with the given configuration
 func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
 	if cfg.EndpointNotify == "" {
@@ -96,75 +86,4 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 			logErr(err)
 		}
 	}()
-}
-
-// User information about the user affected by the error. These fields are
-// optional but highly recommended. To display custom user data alongside these
-// standard fields on the Bugsnag website, the custom data should be included
-// in the metaData object in a user object.
-type User struct {
-	// ID is a unique identifier for a user affected by the event.
-	// This could be any distinct identifier that makes sense for your app.
-	ID string `json:"id,omitempty"`
-
-	// Name is a human readable name of the user affected.
-	Name string `json:"name,omitempty"`
-
-	// Email is the user's email address, if known.
-	Email string `json:"email,omitempty"`
-}
-
-// WithUser attaches the given User data to the given context, such that it can
-// later be provided to the Notify method, and have this data show up in your
-// dashboard.
-func WithUser(ctx context.Context, user User) context.Context {
-	return context.WithValue(ctx, userKey, &user)
-}
-
-// WithBugsnagContext applies the given bContext as the "Context" for the errors that
-// show up in your Bugsnag dashboard. The naming here is unfortunate, but to be
-// fair, Bugsnag had this nomenclature before Go did...
-func WithBugsnagContext(ctx context.Context, bContext string) context.Context {
-	return context.WithValue(ctx, contextKey, bContext)
-}
-
-// WithMetadatum attaches the given key and value under the provided tab in the
-// Bugsnag dashboard. You may use the following tab names to add data to
-// existing/common tabs in the dashboard with the same name:
-//   "user", "app", "device", "request"
-func WithMetadatum(ctx context.Context, tab, key string, value interface{}) context.Context {
-	m := initializeMetadataTab(ctx, tab)
-	m[tab][key] = value
-	return WithMetadata(ctx, tab, m[tab])
-}
-
-// WithMetadata attaches the given data under the provided tab in the
-// Bugsnag dashboard. You may use the following tab names to add data to
-// existing/common tabs in the dashboard with the same name:
-//   "user", "app", "device", "request"
-func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
-	m := initializeMetadataTab(ctx, tab)
-	m[tab] = data
-	return context.WithValue(ctx, metadataKey, m)
-}
-
-func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
-	m := Metadata(ctx)
-	if m == nil {
-		m = map[string]map[string]interface{}{}
-	}
-
-	if m[tab] == nil {
-		m[tab] = map[string]interface{}{}
-	}
-	return m
-}
-
-// Metadata pulls out all the metadata known by this package as a
-// map[tab]map[key]value from the given context.
-func Metadata(ctx context.Context) map[string]map[string]interface{} {
-	if m, ok := ctx.Value(metadataKey).(map[string]map[string]interface{}); ok {
-		return m
-	}
-	return nil
 }
