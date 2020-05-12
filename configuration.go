@@ -12,10 +12,10 @@ import (
 
 // Configuration represents all of the possible configurations for the notifier.
 type Configuration struct {
-	APIKey string // Required. The 32 hex-character API Key for your Bugsnag project.
-
-	AppVersion   string // Optional, but highly recommended.
-	ReleaseStage string // Optional, but highly recommended.
+	// Required configuration options.
+	APIKey       string // The 32 hex-character API Key for your Bugsnag project.
+	AppVersion   string // The version of your application, as semver.
+	ReleaseStage string // The stage in your release cycle, e.g. "development", "production", etc. Any non-empty value is valid.
 
 	// Optional. The endpoint to send error reports to. Configure if you're
 	// using an on-premise installation of Bugsnag. Defaults to
