@@ -55,24 +55,31 @@ func TestMetadata(t *testing.T) {
 }
 
 func TestCtxSerialization(t *testing.T) {
-	asJSON := func(s interface{}) string {
-		b, err := json.Marshal(s)
-		if err != nil {
-			return "<<ERROR>>"
-		}
-		return string(b)
-	}
 	ctx := context.Background()
 	ctx = WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
 	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
 	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
 	ctx = WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
 	ctx = WithBugsnagContext(ctx, "/pokemon?type=fire")
-	cd := getAttachedContextData(ctx)
-	jsonassert.New(t).Assertf(asJSON(cd), `{
-		"cx": "/pokemon?type=fire",
-		"bc":[{"md":{"msg": "ruh roh"}, "na":"log event", "ty":4}],
-		"us":{"email":"charlie@pokemon.example.com", "id":"qwpeoiub", "name":"charlie"},
-		"md":{"app": {"nick": "charmander", "types": ["fire"]}}
-	}`)
+
+	t.Run("json serialization", func(t *testing.T) {
+		b, _ := json.Marshal(getAttachedContextData(ctx))
+		jsonassert.New(t).Assertf(string(b), `{
+			"cx": "/pokemon?type=fire",
+			"bc":[{"md":{"msg": "ruh roh"}, "ts":"<<PRESENCE>>", "na":"log event", "ty":4}],
+			"us":{"email":"charlie@pokemon.example.com", "id":"qwpeoiub", "name":"charlie"},
+			"md":{"app": {"nick": "charmander", "types": ["fire"]}}
+		}`)
+	})
+
+	t.Run("serialize + deserialize yields the same data", func(t *testing.T) {
+		ctx = Deserialize(context.Background(), Serialize(ctx))
+		b, _ := json.Marshal(getAttachedContextData(ctx))
+		jsonassert.New(t).Assertf(string(b), `{
+			"cx": "/pokemon?type=fire",
+			"bc":[{"md":{"msg": "ruh roh"}, "ts":"<<PRESENCE>>", "na":"log event", "ty":4}],
+			"us":{"email":"charlie@pokemon.example.com", "id":"qwpeoiub", "name":"charlie"},
+			"md":{"app": {"nick": "charmander", "types": ["fire"]}}
+		}`)
+	})
 }
