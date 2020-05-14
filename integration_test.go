@@ -93,7 +93,7 @@ func TestIntegration(t *testing.T) {
 				"severityReason": { "type": "unhandledPanic" },
 				"unhandled": true,
 				"context": "User batch job",
-				"app": { "version": "5.2.3", "releaseStage": "staging" },
+				"app": { "version": "5.2.3", "releaseStage": "staging", "duration": "<<PRESENCE>>" },
 				"device": { "hostname": "%s", "osName": "%s", "osVersion": "<<PRESENCE>>", "memStats": "<<PRESENCE>>", "runtimeVersions": { "go": "%s" } },
 				"user": { "id": "1234", "name": "River Tam", "email": "river@serenity.space" },
 				"metaData": {"myTab": {"goodbye": "cruel world", "hello": 423}},

@@ -32,7 +32,7 @@ type JSONApp struct {
 	Type string `json:"type,omitempty"`
 
 	// Duration is how long the app has been running for in milliseconds.
-	Duration int64 `json:"duration,omitempty"`
+	Duration int64 `json:"duration"`
 }
 
 // JSONDevice is information about the computer/device running the app.
