@@ -37,7 +37,7 @@ func TestBreadcrumbs(t *testing.T) {
 
 func TestUserAndContext(t *testing.T) {
 	exp := User{ID: "id", Name: "name", Email: "email"}
-	if got := getAttachedContextData(WithUser(context.Background(), exp)).user; *got != exp {
+	if got := getAttachedContextData(WithUser(context.Background(), exp)).User; *got != exp {
 		t.Errorf("expected that when I add '%+v' to the context what I get back ('%+v') should be equal", exp, got)
 	}
 }
@@ -52,4 +52,27 @@ func TestMetadata(t *testing.T) {
 	if deviceModel, exp := md["device"]["model"], "15023-2"; deviceModel != exp {
 		t.Errorf("expected device.model to be '%s' but was '%s'", exp, deviceModel)
 	}
+}
+
+func TestCtxSerialization(t *testing.T) {
+	asJSON := func(s interface{}) string {
+		b, err := json.Marshal(s)
+		if err != nil {
+			return "<<ERROR>>"
+		}
+		return string(b)
+	}
+	ctx := context.Background()
+	ctx = WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
+	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
+	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
+	ctx = WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
+	ctx = WithBugsnagContext(ctx, "/pokemon?type=fire")
+	cd := getAttachedContextData(ctx)
+	jsonassert.New(t).Assertf(asJSON(cd), `{
+		"cx": "/pokemon?type=fire",
+		"bc":[{"md":{"msg": "ruh roh"}, "na":"log event", "ty":4}],
+		"us":{"email":"charlie@pokemon.example.com", "id":"qwpeoiub", "name":"charlie"},
+		"md":{"app": {"nick": "charmander", "types": ["fire"]}}
+	}`)
 }

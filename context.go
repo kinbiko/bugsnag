@@ -60,10 +60,10 @@ func (b bcType) val() string {
 }
 
 type ctxData struct {
-	bContext    string
-	breadcrumbs []Breadcrumb
-	user        *User
-	metadata    map[string]map[string]interface{}
+	BContext    string                            `json:"cx"`
+	Breadcrumbs []Breadcrumb                      `json:"bc"`
+	User        *User                             `json:"us"`
+	Metadata    map[string]map[string]interface{} `json:"md"`
 }
 
 // Breadcrumb represents user- and system-initiated events which led up
@@ -71,17 +71,17 @@ type ctxData struct {
 type Breadcrumb struct {
 	// A short summary describing the breadcrumb, such as entering a new
 	// application state
-	Name string
+	Name string `json:"na"`
 
 	// Type is a category which describes the breadcrumb, from the list of
 	// allowed values. Accepted values are of the form bugsnag.BCType*.
-	Type bcType
+	Type bcType `json:"ty"`
 
 	// Metadata contains any additional information about the breadcrumb, as
 	// key/value pairs.
-	Metadata map[string]interface{}
+	Metadata map[string]interface{} `json:"md"`
 
-	timestamp time.Time
+	timestamp time.Time `json:"ts"`
 }
 
 // WithBreadcrumb attaches a breadcrumb to the top of the stack of breadcrumbs
@@ -89,12 +89,12 @@ type Breadcrumb struct {
 func WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
 	b.timestamp = time.Now().UTC()
 	cd := getAttachedContextData(ctx)
-	cd.breadcrumbs = append(cd.breadcrumbs, b)
+	cd.Breadcrumbs = append(cd.Breadcrumbs, b)
 	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
 func makeBreadcrumbs(ctx context.Context) []*JSONBreadcrumb {
-	bcs := getAttachedContextData(ctx).breadcrumbs
+	bcs := getAttachedContextData(ctx).Breadcrumbs
 	if bcs == nil {
 		return nil
 	}
@@ -132,7 +132,7 @@ type User struct {
 // dashboard.
 func WithUser(ctx context.Context, user User) context.Context {
 	cd := getAttachedContextData(ctx)
-	cd.user = &user
+	cd.User = &user
 	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
@@ -141,7 +141,7 @@ func WithUser(ctx context.Context, user User) context.Context {
 // fair, Bugsnag had this nomenclature before Go did...
 func WithBugsnagContext(ctx context.Context, bContext string) context.Context {
 	cd := getAttachedContextData(ctx)
-	cd.bContext = bContext
+	cd.BContext = bContext
 	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
@@ -163,14 +163,14 @@ func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) 
 	m := initializeMetadataTab(ctx, tab)
 	m[tab] = data
 	cd := getAttachedContextData(ctx)
-	cd.metadata = m
+	cd.Metadata = m
 	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
 // Metadata pulls out all the metadata known by this package as a
 // map[tab]map[key]value from the given context.
 func Metadata(ctx context.Context) map[string]map[string]interface{} {
-	return getAttachedContextData(ctx).metadata
+	return getAttachedContextData(ctx).Metadata
 }
 
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
@@ -195,9 +195,9 @@ type jsonCtxData struct {
 
 func extractAugmentedContextData(ctx context.Context, err error, unhandled bool) *jsonCtxData {
 	data := &jsonCtxData{
-		bContext:    getAttachedContextData(ctx).bContext,
+		bContext:    getAttachedContextData(ctx).BContext,
 		breadcrumbs: makeBreadcrumbs(ctx),
-		user:        getAttachedContextData(ctx).user,
+		user:        getAttachedContextData(ctx).User,
 		session:     makeJSONSession(ctx, unhandled),
 		metadata:    Metadata(ctx),
 	}
@@ -222,13 +222,13 @@ func extractAugmentedContextData(ctx context.Context, err error, unhandled bool)
 }
 
 func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
-	if dataBContext := getAttachedContextData(ctx).bContext; dataBContext != "" {
+	if dataBContext := getAttachedContextData(ctx).BContext; dataBContext != "" {
 		data.bContext = dataBContext
 	}
 	if dataBreadcrumbs := makeBreadcrumbs(ctx); dataBreadcrumbs != nil {
 		data.breadcrumbs = dataBreadcrumbs
 	}
-	if dataUser := getAttachedContextData(ctx).user; dataUser != nil {
+	if dataUser := getAttachedContextData(ctx).User; dataUser != nil {
 		data.user = dataUser
 	}
 	if dataSession := makeJSONSession(ctx, unhandled); dataSession != nil {
