@@ -37,7 +37,7 @@ func TestBreadcrumbs(t *testing.T) {
 
 func TestUserAndContext(t *testing.T) {
 	exp := User{ID: "id", Name: "name", Email: "email"}
-	if got := makeUser(WithUser(context.Background(), exp)); *got != exp {
+	if got := getAttachedContextData(WithUser(context.Background(), exp)).user; *got != exp {
 		t.Errorf("expected that when I add '%+v' to the context what I get back ('%+v') should be equal", exp, got)
 	}
 }

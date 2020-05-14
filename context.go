@@ -10,10 +10,7 @@ type ctxKey int
 
 const (
 	sessionKey ctxKey = iota + 1
-	userKey
-	breadcrumbKey
-	contextKey
-	metadataKey
+	ctxDataKey
 )
 
 type bcType int
@@ -62,6 +59,13 @@ func (b bcType) val() string {
 	}[b]
 }
 
+type ctxData struct {
+	bContext    string
+	breadcrumbs []Breadcrumb
+	user        *User
+	metadata    map[string]map[string]interface{}
+}
+
 // Breadcrumb represents user- and system-initiated events which led up
 // to an error, providing additional context.
 type Breadcrumb struct {
@@ -84,31 +88,20 @@ type Breadcrumb struct {
 // stored in the given context.
 func WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
 	b.timestamp = time.Now().UTC()
-	val := ctx.Value(breadcrumbKey)
-	if val == nil {
-		return context.WithValue(ctx, breadcrumbKey, []Breadcrumb{b})
-	}
-	if bcs, ok := val.([]Breadcrumb); ok {
-		bcs = append([]Breadcrumb{b}, bcs...)
-		return context.WithValue(ctx, breadcrumbKey, bcs)
-	}
-	return context.WithValue(ctx, breadcrumbKey, []Breadcrumb{b})
+	cd := getAttachedContextData(ctx)
+	cd.breadcrumbs = append(cd.breadcrumbs, b)
+	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
 func makeBreadcrumbs(ctx context.Context) []*JSONBreadcrumb {
-	val := ctx.Value(breadcrumbKey)
-	if val == nil {
-		return nil
-	}
-
-	bcs, ok := val.([]Breadcrumb)
-	if !ok {
+	bcs := getAttachedContextData(ctx).breadcrumbs
+	if bcs == nil {
 		return nil
 	}
 
 	payloads := make([]*JSONBreadcrumb, len(bcs))
 	for i, bc := range bcs {
-		payloads[i] = &JSONBreadcrumb{
+		payloads[len(bcs)-1-i] = &JSONBreadcrumb{
 			Timestamp: bc.timestamp.Format(time.RFC3339),
 			Name:      bc.Name,
 			Type:      bc.Type.val(),
@@ -138,14 +131,18 @@ type User struct {
 // later be provided to the Notify method, and have this data show up in your
 // dashboard.
 func WithUser(ctx context.Context, user User) context.Context {
-	return context.WithValue(ctx, userKey, &user)
+	cd := getAttachedContextData(ctx)
+	cd.user = &user
+	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
 // WithBugsnagContext applies the given bContext as the "Context" for the errors that
 // show up in your Bugsnag dashboard. The naming here is unfortunate, but to be
 // fair, Bugsnag had this nomenclature before Go did...
 func WithBugsnagContext(ctx context.Context, bContext string) context.Context {
-	return context.WithValue(ctx, contextKey, bContext)
+	cd := getAttachedContextData(ctx)
+	cd.bContext = bContext
+	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
 // WithMetadatum attaches the given key and value under the provided tab in the
@@ -165,7 +162,15 @@ func WithMetadatum(ctx context.Context, tab, key string, value interface{}) cont
 func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
 	m := initializeMetadataTab(ctx, tab)
 	m[tab] = data
-	return context.WithValue(ctx, metadataKey, m)
+	cd := getAttachedContextData(ctx)
+	cd.metadata = m
+	return context.WithValue(ctx, ctxDataKey, cd)
+}
+
+// Metadata pulls out all the metadata known by this package as a
+// map[tab]map[key]value from the given context.
+func Metadata(ctx context.Context) map[string]map[string]interface{} {
+	return getAttachedContextData(ctx).metadata
 }
 
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
@@ -180,20 +185,19 @@ func initializeMetadataTab(ctx context.Context, tab string) map[string]map[strin
 	return m
 }
 
-// Metadata pulls out all the metadata known by this package as a
-// map[tab]map[key]value from the given context.
-func Metadata(ctx context.Context) map[string]map[string]interface{} {
-	if m, ok := ctx.Value(metadataKey).(map[string]map[string]interface{}); ok {
-		return m
-	}
-	return nil
+type jsonCtxData struct {
+	bContext    string
+	breadcrumbs []*JSONBreadcrumb
+	user        *JSONUser
+	session     *JSONSession
+	metadata    map[string]map[string]interface{}
 }
 
-func extractInnermostCtx(ctx context.Context, err error, unhandled bool) *ctxData {
-	data := &ctxData{
-		bContext:    makeContext(ctx),
+func extractAugmentedContextData(ctx context.Context, err error, unhandled bool) *jsonCtxData {
+	data := &jsonCtxData{
+		bContext:    getAttachedContextData(ctx).bContext,
 		breadcrumbs: makeBreadcrumbs(ctx),
-		user:        makeUser(ctx),
+		user:        getAttachedContextData(ctx).user,
 		session:     makeJSONSession(ctx, unhandled),
 		metadata:    Metadata(ctx),
 	}
@@ -217,26 +221,14 @@ func extractInnermostCtx(ctx context.Context, err error, unhandled bool) *ctxDat
 	return data
 }
 
-func makeUser(ctx context.Context) *User {
-	u := ctx.Value(userKey)
-	if u == nil {
-		return nil
-	}
-	user, ok := u.(*User)
-	if !ok {
-		return nil
-	}
-	return user
-}
-
-func (data *ctxData) updateFromCtx(ctx context.Context, unhandled bool) {
-	if dataBContext := makeContext(ctx); dataBContext != "" {
+func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
+	if dataBContext := getAttachedContextData(ctx).bContext; dataBContext != "" {
 		data.bContext = dataBContext
 	}
 	if dataBreadcrumbs := makeBreadcrumbs(ctx); dataBreadcrumbs != nil {
 		data.breadcrumbs = dataBreadcrumbs
 	}
-	if dataUser := makeUser(ctx); dataUser != nil {
+	if dataUser := getAttachedContextData(ctx).user; dataUser != nil {
 		data.user = dataUser
 	}
 	if dataSession := makeJSONSession(ctx, unhandled); dataSession != nil {
@@ -257,9 +249,9 @@ func (data *ctxData) updateFromCtx(ctx context.Context, unhandled bool) {
 	}
 }
 
-func makeContext(ctx context.Context) string {
-	if v, ok := ctx.Value(contextKey).(string); ok {
-		return v
+func getAttachedContextData(ctx context.Context) *ctxData {
+	if val := ctx.Value(ctxDataKey); val != nil {
+		return val.(*ctxData)
 	}
-	return ""
+	return &ctxData{}
 }

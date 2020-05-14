@@ -29,14 +29,6 @@ type causer interface {
 	Cause() error
 }
 
-type ctxData struct {
-	bContext    string
-	breadcrumbs []*JSONBreadcrumb
-	user        *User
-	session     *JSONSession
-	metadata    map[string]map[string]interface{}
-}
-
 func (n *Notifier) makeReport(ctx context.Context, err error) *JSONErrorReport {
 	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
@@ -47,7 +39,7 @@ func (n *Notifier) makeReport(ctx context.Context, err error) *JSONErrorReport {
 
 func makeEvents(ctx context.Context, cfg *Configuration, err error) []*JSONEvent {
 	unhandled := makeUnhandled(err)
-	ctxData := extractInnermostCtx(ctx, err, unhandled)
+	ctxData := extractAugmentedContextData(ctx, err, unhandled)
 	return []*JSONEvent{
 		{
 			PayloadVersion: "5",
