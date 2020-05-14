@@ -2,6 +2,8 @@ package bugsnag
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"time"
 )
@@ -12,6 +14,34 @@ const (
 	sessionKey ctxKey = iota + 1
 	ctxDataKey
 )
+
+// Serialize extraxts all the diagnostic data tracked within the given ctx to a
+// string that can later be deserialized using Deserialize. Useful for passing
+// diagnostic to downstream services in header values.
+func Serialize(ctx context.Context) []byte {
+	b, err := json.Marshal(getAttachedContextData(ctx))
+	if err != nil {
+		return nil
+	}
+	return []byte(base64.StdEncoding.EncodeToString(b))
+}
+
+// Deserialize extracts diagnostic data that has previously been serialized
+// with Serialize and attaches it to the given ctx. Intended to be called in
+// server middleware to attach diagnostic data identified from upstream
+// services. As a result, any existing diagnostic data (session data from
+// StartSession not inclusive) will be wiped.
+func Deserialize(ctx context.Context, base64Data []byte) context.Context {
+	jsonData, err := base64.StdEncoding.DecodeString(string(base64Data))
+	if err != nil {
+		return ctx
+	}
+	cd := &ctxData{}
+	if err := json.Unmarshal(jsonData, cd); err != nil {
+		return ctx
+	}
+	return context.WithValue(ctx, ctxDataKey, cd)
+}
 
 type bcType int
 
@@ -81,13 +111,16 @@ type Breadcrumb struct {
 	// key/value pairs.
 	Metadata map[string]interface{} `json:"md"`
 
-	timestamp time.Time `json:"ts"`
+	// Timestamp is set automatically to the current timestamp if not set.
+	Timestamp time.Time `json:"ts"`
 }
 
 // WithBreadcrumb attaches a breadcrumb to the top of the stack of breadcrumbs
 // stored in the given context.
 func WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
-	b.timestamp = time.Now().UTC()
+	if b.Timestamp.IsZero() {
+		b.Timestamp = time.Now().UTC()
+	}
 	cd := getAttachedContextData(ctx)
 	cd.Breadcrumbs = append(cd.Breadcrumbs, b)
 	return context.WithValue(ctx, ctxDataKey, cd)
@@ -102,7 +135,7 @@ func makeBreadcrumbs(ctx context.Context) []*JSONBreadcrumb {
 	payloads := make([]*JSONBreadcrumb, len(bcs))
 	for i, bc := range bcs {
 		payloads[len(bcs)-1-i] = &JSONBreadcrumb{
-			Timestamp: bc.timestamp.Format(time.RFC3339),
+			Timestamp: bc.Timestamp.Format(time.RFC3339),
 			Name:      bc.Name,
 			Type:      bc.Type.val(),
 			Metadata:  bc.Metadata,
