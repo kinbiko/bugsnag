@@ -62,7 +62,7 @@ type JSONDevice struct {
 // === SESSION ===
 // The following payloads only apply to sessions
 
-// JSONSessionReport defines the top level payload object
+// JSONSessionReport defines the top level payload object.
 type JSONSessionReport struct {
 	Notifier      *JSONNotifier       `json:"notifier"`
 	App           *JSONApp            `json:"app"`
@@ -70,7 +70,7 @@ type JSONSessionReport struct {
 	SessionCounts []JSONSessionCounts `json:"sessionCounts"`
 }
 
-// JSONSessionCounts defines the .sessionCounts subobject of the payload
+// JSONSessionCounts defines the .sessionCounts subobject of the payload.
 type JSONSessionCounts struct {
 	StartedAt       string `json:"startedAt"`
 	SessionsStarted int    `json:"sessionsStarted"`

@@ -261,6 +261,10 @@ issues:
         - gomnd
         - stylecheck
         - funlen
+        - testpackage
+    - path: \.go
+      linters:
+        - goerr113
 
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all

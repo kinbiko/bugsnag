@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"runtime/debug"
 	"strings"
 )
 
@@ -56,7 +57,7 @@ func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interfa
 }
 
 // Wrap attaches ctx data and wraps the given error with message (does not wrap
-// the given error if no message was given)
+// the given error if no message was given).
 func Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
 	if err == nil {
 		return nil
@@ -106,4 +107,15 @@ func makeStacktrace(module string) []*JSONStackframe {
 		}
 	}
 	return stacktrace[lastBugsnagIndex+1:]
+}
+
+// makeModulePath defines the root of the project that uses this package.
+// Used to identify if a file is "in-project" or a third party library,
+// which is in turn used by Bugsnag to group errors by the top stackframe
+// that's "in project".
+func makeModulePath() string {
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		return bi.Main.Path
+	}
+	return ""
 }

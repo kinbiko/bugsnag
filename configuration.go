@@ -12,20 +12,30 @@ import (
 
 // Configuration represents all of the possible configurations for the notifier.
 type Configuration struct {
-	// Required configuration options.
-	APIKey       string // The 32 hex-character API Key for your Bugsnag project.
-	AppVersion   string // The version of your application, as semver.
-	ReleaseStage string // The stage in your release cycle, e.g. "development", "production", etc. Any non-empty value is valid.
 
-	// Optional. The endpoint to send error reports to. Configure if you're
+	// Required configuration options:
+
+	// The 32 hex-character API Key for your Bugsnag project.
+	APIKey string
+	// The version of your application, as semver.
+	AppVersion string
+	// The stage in your release cycle, e.g. "development", "production", etc.
+	// Any non-empty value is valid.
+	ReleaseStage string
+
+	// Optional configuration options:
+
+	// The endpoint to send error reports to. Configure if you're
 	// using an on-premise installation of Bugsnag. Defaults to
 	// https://notify.bugsnag.com
 	EndpointNotify string
-	// Optional. The endpoint to send sessions to. Configure if you're using an
+	// The endpoint to send sessions to. Configure if you're using an
 	// on-premise installation of Bugsnag. Defaults to
 	// https://sessions.bugsnag.com
 	EndpointSessions string
 
+	// If defined its SanitizeErrorReport will be invoked just before each API
+	// call to Bugsnag.
 	ErrorReportSanitizer ErrorReportSanitizer
 
 	runtimeConstants
@@ -89,15 +99,4 @@ func makeRuntimeConstants() runtimeConstants {
 		}
 	}
 	return rc
-}
-
-// makeModulePath defines the root of the project that uses this package.
-// Used to identify if a file is "in-project" or a third party library,
-// which is in turn used by Bugsnag to group errors by the top stackframe
-// that's "in project".
-func makeModulePath() string {
-	if bi, ok := debug.ReadBuildInfo(); ok {
-		return bi.Main.Path
-	}
-	return ""
 }
