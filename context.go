@@ -226,7 +226,7 @@ type jsonCtxData struct {
 	metadata    map[string]map[string]interface{}
 }
 
-func extractAugmentedContextData(ctx context.Context, err error, unhandled bool) *jsonCtxData {
+func extractAugmentedContextData(ctx context.Context, err error, unhandled bool) (*jsonCtxData, context.Context) {
 	data := &jsonCtxData{
 		bContext:    getAttachedContextData(ctx).BContext,
 		breadcrumbs: makeBreadcrumbs(ctx),
@@ -234,12 +234,14 @@ func extractAugmentedContextData(ctx context.Context, err error, unhandled bool)
 		session:     makeJSONSession(ctx, unhandled),
 		metadata:    Metadata(ctx),
 	}
+	lowestCtx := ctx
 	var e error = err
 	for {
 		if berr, ok := e.(*Error); ok {
 			ctx = berr.ctx
 			if ctx != nil {
 				data.updateFromCtx(ctx, unhandled)
+				lowestCtx = ctx
 			}
 		}
 		e = errors.Unwrap(e)
@@ -251,7 +253,7 @@ func extractAugmentedContextData(ctx context.Context, err error, unhandled bool)
 	if data.bContext == "" {
 		data.bContext = err.Error()
 	}
-	return data
+	return data, lowestCtx
 }
 
 func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {

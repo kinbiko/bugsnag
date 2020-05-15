@@ -34,6 +34,11 @@ type Notifier struct {
 // This context will be attached to the http.Request used for the request to
 // Bugsnag, so you are also free to set deadlines etc as you see fit.
 type ErrorReportSanitizer interface {
+	// The ctx param provided will be the ctx from the deepest location where
+	// Wrap is called, falling back to the ctx given to Notify.
+	// It is recommended to return an unrelated ctx from this method instead of
+	// a derivative of the input ctx, as the deadline properties etc. of the
+	// returned ctx is used in the HTTP request to Bugsnag.
 	SanitizeErrorReport(ctx context.Context, p *JSONErrorReport) context.Context
 }
 
@@ -65,7 +70,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 		logErr(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
 	}
-	report := n.makeReport(ctx, err)
+	report, ctx := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
 		ctx = sanitizer.SanitizeErrorReport(context.Background(), report)
 		if ctx == nil {
@@ -109,33 +114,29 @@ type causer interface {
 	Cause() error
 }
 
-func (n *Notifier) makeReport(ctx context.Context, err error) *JSONErrorReport {
+func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport, context.Context) {
+	unhandled := makeUnhandled(err)
+	cd, ctx := extractAugmentedContextData(ctx, err, unhandled)
 	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
 		Notifier: makeNotifier(n.cfg),
-		Events:   makeEvents(ctx, n.cfg, err),
-	}
-}
-
-func makeEvents(ctx context.Context, cfg *Configuration, err error) []*JSONEvent {
-	unhandled := makeUnhandled(err)
-	ctxData := extractAugmentedContextData(ctx, err, unhandled)
-	return []*JSONEvent{
-		{
-			PayloadVersion: "5",
-			Context:        ctxData.bContext,
-			Unhandled:      unhandled,
-			Severity:       makeSeverity(err),
-			SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
-			Exceptions:     makeExceptions(err),
-			Breadcrumbs:    ctxData.breadcrumbs,
-			User:           ctxData.user,
-			App:            makeJSONApp(cfg),
-			Device:         cfg.makeJSONDevice(),
-			Session:        ctxData.session,
-			Metadata:       ctxData.metadata,
+		Events: []*JSONEvent{
+			{
+				PayloadVersion: "5",
+				Context:        cd.bContext,
+				Unhandled:      unhandled,
+				Severity:       makeSeverity(err),
+				SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
+				Exceptions:     makeExceptions(err),
+				Breadcrumbs:    cd.breadcrumbs,
+				User:           cd.user,
+				App:            makeJSONApp(n.cfg),
+				Device:         n.cfg.makeJSONDevice(),
+				Session:        cd.session,
+				Metadata:       cd.metadata,
+			},
 		},
-	}
+	}, ctx
 }
 
 func makeUnhandled(err error) bool {
