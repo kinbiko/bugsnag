@@ -77,23 +77,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 			return
 		}
 	}
-	b, err := json.Marshal(report)
-	if err != nil {
-		logErr(fmt.Errorf("unable to marshal JSON: %w", err))
-	}
-	req, err := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
-	if err != nil {
-		logErr(fmt.Errorf("unable to create new request: %w", err))
-	}
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
-	if err != nil {
-		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
-	}
-	defer func() {
-		if err := res.Body.Close(); err != nil {
-			logErr(err)
-		}
-	}()
+	n.sendErrorReport(ctx, report)
 }
 
 type severity int
@@ -135,6 +119,30 @@ func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport,
 			},
 		},
 	}, ctx
+}
+
+func (n *Notifier) sendErrorReport(ctx context.Context, report *JSONErrorReport) {
+	b, err := json.Marshal(report)
+	if err != nil {
+		logErr(fmt.Errorf("unable to marshal JSON: %w", err))
+	}
+	req, err := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
+	if err != nil {
+		logErr(fmt.Errorf("unable to create new request: %w", err))
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
+	req.Header.Add("Bugsnag-Payload-Version", "5")
+	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	if err != nil {
+		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
+		return
+	}
+	if err := res.Body.Close(); err != nil {
+		logErr(err)
+	}
 }
 
 func makeUnhandled(err error) bool {
