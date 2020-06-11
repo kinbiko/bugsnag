@@ -34,9 +34,13 @@ type Configuration struct {
 	// https://sessions.bugsnag.com
 	EndpointSessions string
 
-	// If defined its SanitizeErrorReport will be invoked just before each API
-	// call to Bugsnag.
+	// If defined it will be invoked just before each error report API call to
+	// Bugsnag.
 	ErrorReportSanitizer ErrorReportSanitizer
+
+	// If defined it will be invoked just before each session report API call
+	// to Bugsnag.
+	SessionReportSanitizer SessionReportSanitizer
 
 	runtimeConstants
 }

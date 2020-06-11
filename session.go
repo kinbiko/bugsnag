@@ -17,6 +17,13 @@ type session struct {
 	EventCounts *JSONSessionEvents
 }
 
+// SessionReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
+// No further modifications will happen to the payload after this is run.
+// You may return a nil Context in order to prevent the payload from being sent at all.
+// This context will be attached to the http.Request used for the request to
+// Bugsnag, so you are also free to set deadlines etc as you see fit.
+type SessionReportSanitizer func(p *JSONSessionReport) context.Context
+
 // StartSession attaches Bugsnag session data to a copy of the given
 // context.Context, and returns the new context.Context.
 // Records the newly started session and will at some point flush this session.
@@ -64,14 +71,24 @@ func (n *Notifier) flushSessions() {
 }
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {
-	payload, err := json.Marshal(makeJSONSessionReport(cfg, sessions))
+	report := makeJSONSessionReport(cfg, sessions)
+	ctx := context.Background()
+	if sanitizer := n.cfg.SessionReportSanitizer; sanitizer != nil {
+		ctx = sanitizer(report)
+		if ctx == nil {
+			// A nil ctx indicates that we should not send the payload.
+			// Useful for testing etc.
+			return nil
+		}
+	}
+	payload, err := json.Marshal(report)
 	if err != nil {
-		return fmt.Errorf("unable to marshal json: %v", err)
+		return fmt.Errorf("unable to marshal json: %w", err)
 	}
 
 	req, err := http.NewRequest("POST", cfg.EndpointSessions, bytes.NewBuffer(payload))
 	if err != nil {
-		return fmt.Errorf("unable to create request: %v", err)
+		return fmt.Errorf("unable to create request: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -79,14 +96,9 @@ func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) erro
 	req.Header.Add("Bugsnag-Payload-Version", "1.0")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req.WithContext(ctx))
 	if err != nil {
-		_ = res.Body.Close()
-		return fmt.Errorf("unable to deliver session: %v", err)
-	}
-	if s := res.StatusCode; s != http.StatusAccepted {
-		_ = res.Body.Close()
-		return fmt.Errorf("expected 202 response status, got HTTP %d", s)
+		return fmt.Errorf("unable to deliver session: %w", err)
 	}
 	return res.Body.Close()
 }
