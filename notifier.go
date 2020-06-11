@@ -33,14 +33,12 @@ type Notifier struct {
 // You may return a nil Context in order to prevent the payload from being sent at all.
 // This context will be attached to the http.Request used for the request to
 // Bugsnag, so you are also free to set deadlines etc as you see fit.
-type ErrorReportSanitizer interface {
-	// The ctx param provided will be the ctx from the deepest location where
-	// Wrap is called, falling back to the ctx given to Notify.
-	// It is recommended to return an unrelated ctx from this method instead of
-	// a derivative of the input ctx, as the deadline properties etc. of the
-	// returned ctx is used in the HTTP request to Bugsnag.
-	SanitizeErrorReport(ctx context.Context, p *JSONErrorReport) context.Context
-}
+// The ctx param provided will be the ctx from the deepest location where
+// Wrap is called, falling back to the ctx given to Notify.
+// It is recommended to return an unrelated ctx from this method instead of
+// a derivative of the input ctx, as the deadline properties etc. of the
+// returned ctx is used in the HTTP request to Bugsnag.
+type ErrorReportSanitizer func(ctx context.Context, p *JSONErrorReport) context.Context
 
 // New constructs a new Notifier with the given configuration.
 func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
@@ -72,7 +70,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	}
 	report, ctx := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		ctx = sanitizer.SanitizeErrorReport(context.Background(), report)
+		ctx = sanitizer(context.Background(), report)
 		if ctx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
