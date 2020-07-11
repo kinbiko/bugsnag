@@ -3,16 +3,17 @@ package bugsnag
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
-
-	uuid "github.com/gofrs/uuid"
 )
 
 type session struct {
-	ID          uuid.UUID
+	ID          string
 	StartedAt   time.Time
 	EventCounts *JSONSessionEvents
 }
@@ -29,10 +30,9 @@ type SessionReportSanitizer func(p *JSONSessionReport) context.Context
 // Records the newly started session and will at some point flush this session.
 func (n *Notifier) StartSession(ctx context.Context) context.Context {
 	n.sessionOnce.Do(func() { go n.startSessionTracking() })
-	sessionID, _ := uuid.NewV4()
 	session := &session{
 		StartedAt:   time.Now(),
-		ID:          sessionID,
+		ID:          uuidv4(),
 		EventCounts: &JSONSessionEvents{},
 	}
 	n.sessionChannel <- session
@@ -124,7 +124,7 @@ func incrementEventCountAndGetSession(ctx context.Context, unhandled bool) *sess
 func makeJSONSession(ctx context.Context, unhandled bool) *JSONSession {
 	if sess := incrementEventCountAndGetSession(ctx, unhandled); sess != nil {
 		return &JSONSession{
-			ID:        sess.ID.String(),
+			ID:        sess.ID,
 			StartedAt: sess.StartedAt.Format(time.RFC3339),
 			Events: &JSONSessionEvents{
 				Handled:   sess.EventCounts.Handled,
@@ -149,4 +149,27 @@ func makeJSONSessionReport(cfg *Configuration, sessions []*session) *JSONSession
 			},
 		},
 	}
+}
+
+// uuidv4 returns a randomly generated UUID v4.
+// Returns a canonical RFC-4122 string representation of the UUID:
+// xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
+func uuidv4() string {
+	var u [16]byte
+	_, _ = io.ReadFull(rand.Reader, u[:])
+	u[6] = (u[6] & 0x0f) | (0x04 << 4)  // Version 4
+	u[8] = u[8]&(0xff>>2) | (0x02 << 6) // Variation RFC-4122
+
+	buf := make([]byte, 36)
+	hex.Encode(buf[0:8], u[0:4])
+	buf[8] = '-'
+	hex.Encode(buf[9:13], u[4:6])
+	buf[13] = '-'
+	hex.Encode(buf[14:18], u[6:8])
+	buf[18] = '-'
+	hex.Encode(buf[19:23], u[8:10])
+	buf[23] = '-'
+	hex.Encode(buf[24:], u[10:])
+
+	return string(buf)
 }
