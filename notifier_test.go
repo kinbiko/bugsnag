@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/kinbiko/jsonassert"
-	pkgerrors "github.com/pkg/errors"
 )
 
 func TestApp(t *testing.T) {
@@ -69,7 +68,7 @@ func TestMakeExceptions(t *testing.T) {
 	ctx = WithMetadatum(ctx, "tab", "one", "1")
 
 	err = errors.New("1st error (errors.New)")
-	err = pkgerrors.Wrap(err, "2nd error (github.com/pkg/errors.Wrap)")
+	err = fmt.Errorf("2nd error (github.com/pkg/errors.Wrap): %w", err)
 	err = n.Wrap(WithMetadatum(ctx, "tab", "two", "2"), err, "3rd error (%s.(*Notifier).Wrap)", "bugsnag")
 	err = fmt.Errorf("4th error (fmt.Errorf('percent-w')): %w", err)
 
@@ -89,7 +88,7 @@ func TestMakeExceptions(t *testing.T) {
 				{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
 			]
 		}, {
-			"errorClass": "*errors.withStack",
+			"errorClass": "*fmt.wrapError",
 			"message": "2nd error (github.com/pkg/errors.Wrap): 1st error (errors.New)",
 			"stacktrace": null
 		}, {
