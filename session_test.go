@@ -54,10 +54,9 @@ func TestSessions(t *testing.T) {
 				notifierVersion: "0.1.0",
 			},
 		},
-		sessionChannel:         make(chan *session, 1),
+		sessionCh:              make(chan *session, 1),
 		sessionPublishInterval: time.Microsecond, // Just to make things go a bit faster,
 	}
-	go n.startSessionTracking()
 	n.StartSession(context.Background())
 
 	jsonassert.New(t).Assertf(<-payloads, `{
