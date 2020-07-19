@@ -259,6 +259,7 @@ issues:
         - dupl
         - scopelint
         - gomnd
+        - lll
         - stylecheck
         - funlen
         - testpackage

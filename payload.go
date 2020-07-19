@@ -46,6 +46,10 @@ type JSONDevice struct {
 	// Obviously, this may well stop working in the future.
 	MemStats map[string]interface{} `json:"memStats,omitempty"`
 
+	// GoroutineCount is the number of goroutines running in the app at the
+	// time that Notify was called.
+	GoroutineCount int `json:"goroutineCount,omitempty"`
+
 	// Hostname of the server running your code.
 	Hostname string `json:"hostname,omitempty"`
 

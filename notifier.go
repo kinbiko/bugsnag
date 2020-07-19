@@ -236,6 +236,7 @@ func (c *runtimeConstants) makeJSONDevice() *JSONDevice {
 		OSName:          c.osName,
 		OSVersion:       c.osVersion,
 		MemStats:        memStats(),
+		GoroutineCount:  runtime.NumGoroutine(),
 		RuntimeVersions: map[string]string{"go": c.goVersion},
 	}
 }
