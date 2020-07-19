@@ -29,45 +29,26 @@ type SessionReportSanitizer func(p *JSONSessionReport) context.Context
 // context.Context, and returns the new context.Context.
 // Records the newly started session and will at some point flush this session.
 func (n *Notifier) StartSession(ctx context.Context) context.Context {
-	n.sessionOnce.Do(func() { go n.startSessionTracking() })
+	n.loopOnce.Do(func() { go n.loop() })
 	session := &session{
 		StartedAt:   time.Now(),
 		ID:          uuidv4(),
 		EventCounts: &JSONSessionEvents{},
 	}
-	n.sessionChannel <- session
+	n.sessionCh <- session
 	return context.WithValue(ctx, sessionKey, session)
 }
 
-func (n *Notifier) startSessionTracking() {
-	t := time.NewTicker(n.sessionPublishInterval)
-	for {
-		select {
-		case session := <-n.sessionChannel:
-			n.sessionMutex.Lock()
-			n.sessions = append(n.sessions, session)
-			n.sessionMutex.Unlock()
-		case <-t.C:
-			go n.flushSessions()
-		}
-	}
-}
-
 func (n *Notifier) flushSessions() {
-	n.sessionMutex.Lock()
-	defer n.sessionMutex.Unlock()
-
 	sessions := n.sessions
 	n.sessions = nil
 	if len(sessions) == 0 {
 		return
 	}
 
-	go func() {
-		if err := n.publishSessions(n.cfg, sessions); err != nil {
-			logErr(err)
-		}
-	}()
+	if err := n.publishSessions(n.cfg, sessions); err != nil {
+		logErr(err)
+	}
 }
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {

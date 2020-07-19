@@ -21,11 +21,19 @@ type Notifier struct {
 	cfg *Configuration
 
 	// sessions
-	sessionChannel         chan *session
+	sessionCh              chan *session
 	sessions               []*session
-	sessionMutex           sync.Mutex
 	sessionPublishInterval time.Duration
-	sessionOnce            sync.Once
+
+	loopOnce sync.Once
+
+	reportCh   chan *report
+	shutdownCh chan struct{}
+}
+
+type report struct {
+	ctx    context.Context
+	report *JSONErrorReport
 }
 
 // ErrorReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
@@ -52,14 +60,29 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 		return nil, err
 	}
 
+	const bufChanSize = 16
+
 	return &Notifier{
 		cfg: &cfg,
 
-		sessionChannel:         make(chan *session, 1),
 		sessions:               []*session{},
-		sessionMutex:           sync.Mutex{},
 		sessionPublishInterval: time.Minute,
+
+		sessionCh: make(chan *session, bufChanSize),
+		reportCh:  make(chan *report, bufChanSize),
+
+		shutdownCh: make(chan struct{}),
 	}, nil
+}
+
+// Close shuts down the notifier, flushing any unsent reports and sessions.
+// Any further calls to StartSession and Notify will panic, so it is your
+// responsibility to only call Close at an appropriate time.
+func (n *Notifier) Close() {
+	// OK, so we have that warning above in the documentation about the panics,
+	// but I'd much rather just drop the sessions/reports. I haven't bothered
+	// figuring out how to do this yet in a clean (race-condition-free) manner.
+	n.shutdownCh <- struct{}{}
 }
 
 // Notify reports the given error to Bugsnag.
@@ -68,16 +91,17 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 		logErr(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
 	}
-	report, ctx := n.makeReport(ctx, err)
+	n.loopOnce.Do(func() { go n.loop() })
+	r := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		ctx = sanitizer(context.Background(), report)
+		ctx = sanitizer(context.Background(), r.report)
 		if ctx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
 			return
 		}
 	}
-	n.sendErrorReport(ctx, report)
+	n.reportCh <- r
 }
 
 type severity int
@@ -92,37 +116,74 @@ const (
 	SeverityError
 )
 
+// loop is intended to be an infinitely running goroutine that periodically (as
+// defined by sessionPublishInterval) sends sessions, and sends reports as they
+// come in. This loop ensures that a spike in errors doesn't consume the upload
+// bandwidth for highly concurrent applications.
+func (n *Notifier) loop() {
+	t := time.NewTicker(n.sessionPublishInterval)
+	for {
+		select {
+		case r := <-n.reportCh:
+			n.sendErrorReport(r)
+		case s := <-n.sessionCh:
+			n.sessions = append(n.sessions, s)
+		case <-t.C:
+			n.flushSessions()
+		case <-n.shutdownCh:
+			close(n.shutdownCh)
+
+			close(n.reportCh)
+			for r := range n.reportCh {
+				n.sendErrorReport(r)
+			}
+
+			close(n.sessionCh)
+			for s := range n.sessionCh {
+				n.sessions = append(n.sessions, s)
+			}
+
+			t.Stop()
+			n.flushSessions()
+			return
+		}
+	}
+}
+
 type causer interface {
 	Cause() error
 }
 
-func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport, context.Context) {
+func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 	unhandled := makeUnhandled(err)
 	cd, ctx := extractAugmentedContextData(ctx, err, unhandled)
-	return &JSONErrorReport{
-		APIKey:   n.cfg.APIKey,
-		Notifier: makeNotifier(n.cfg),
-		Events: []*JSONEvent{
-			{
-				PayloadVersion: "5",
-				Context:        cd.bContext,
-				Unhandled:      unhandled,
-				Severity:       makeSeverity(err),
-				SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
-				Exceptions:     makeExceptions(err),
-				Breadcrumbs:    cd.breadcrumbs,
-				User:           cd.user,
-				App:            makeJSONApp(n.cfg),
-				Device:         n.cfg.makeJSONDevice(),
-				Session:        cd.session,
-				Metadata:       cd.metadata,
+	return &report{
+		report: &JSONErrorReport{
+			APIKey:   n.cfg.APIKey,
+			Notifier: makeNotifier(n.cfg),
+			Events: []*JSONEvent{
+				{
+					PayloadVersion: "5",
+					Context:        cd.bContext,
+					Unhandled:      unhandled,
+					Severity:       makeSeverity(err),
+					SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
+					Exceptions:     makeExceptions(err),
+					Breadcrumbs:    cd.breadcrumbs,
+					User:           cd.user,
+					App:            makeJSONApp(n.cfg),
+					Device:         n.cfg.makeJSONDevice(),
+					Session:        cd.session,
+					Metadata:       cd.metadata,
+				},
 			},
 		},
-	}, ctx
+		ctx: ctx,
+	}
 }
 
-func (n *Notifier) sendErrorReport(ctx context.Context, report *JSONErrorReport) {
-	b, err := json.Marshal(report)
+func (n *Notifier) sendErrorReport(r *report) {
+	b, err := json.Marshal(r.report)
 	if err != nil {
 		logErr(fmt.Errorf("unable to marshal JSON: %w", err))
 	}
@@ -135,7 +196,7 @@ func (n *Notifier) sendErrorReport(ctx context.Context, report *JSONErrorReport)
 	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
 	req.Header.Add("Bugsnag-Payload-Version", "5")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	res, err := http.DefaultClient.Do(req.WithContext(r.ctx))
 	if err != nil {
 		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
 		return
