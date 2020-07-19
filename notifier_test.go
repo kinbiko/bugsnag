@@ -54,6 +54,7 @@ func TestDevice(t *testing.T) {
 			"hostname": "myHost",
 			"osName": "linux innit",
 			"osVersion": "4.1.12",
+			"goroutineCount": "<<PRESENCE>>",
 			"runtimeVersions": {"go": "1.15"}
 		}`)
 }
