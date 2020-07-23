@@ -99,3 +99,13 @@ func TestMakeExceptions(t *testing.T) {
 		}
 	]`)
 }
+
+func TestShuttingDown(t *testing.T) {
+	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := n.StartSession(context.Background())
+	n.Notify(ctx, fmt.Errorf("oooi"))
+	n.Close()
+}
