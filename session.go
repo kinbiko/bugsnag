@@ -47,7 +47,7 @@ func (n *Notifier) flushSessions() {
 	}
 
 	if err := n.publishSessions(n.cfg, sessions); err != nil {
-		n.cfg.Fallback(fmt.Errorf("unable to publish sessions: %w", err))
+		n.cfg.InternalErrorCallback(fmt.Errorf("unable to publish sessions: %w", err))
 	}
 }
 

@@ -122,14 +122,14 @@ func TestShuttingDown(t *testing.T) {
 	})
 }
 
-func TestFallback(t *testing.T) {
+func TestInternalErrorCallback(t *testing.T) {
 	t.Run("gets invoked when set", func(t *testing.T) {
 		var got error
 		n, err := New(Configuration{
 			APIKey:       "abcd1234abcd1234abcd1234abcd1234",
 			ReleaseStage: "dev",
 			AppVersion:   "1.2.3",
-			Fallback: func(err error) {
+			InternalErrorCallback: func(err error) {
 				got = err
 			},
 		})
@@ -139,7 +139,7 @@ func TestFallback(t *testing.T) {
 		n.Notify(nil, nil) //nolint:staticcheck // Need to verify that the notifier doesn't die
 
 		if got == nil {
-			t.Error("expected an error in the fallback but got none")
+			t.Error("expected an error in the error callback but got none")
 		}
 	})
 

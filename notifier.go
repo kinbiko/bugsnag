@@ -51,8 +51,8 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 		cfg.EndpointNotify = "https://notify.bugsnag.com"
 		cfg.EndpointSessions = "https://sessions.bugsnag.com"
 	}
-	if cfg.Fallback == nil {
-		cfg.Fallback = func(_ error) {} // Default to a NOOP.
+	if cfg.InternalErrorCallback == nil {
+		cfg.InternalErrorCallback = func(_ error) {} // Default to a NOOP.
 	}
 	cfg.runtimeConstants = makeRuntimeConstants()
 
@@ -100,7 +100,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	// request to Bugsnag (but not the payload contents). Falls back to the ctx
 	// passed into notify.
 	if err == nil {
-		n.cfg.Fallback(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
+		n.cfg.InternalErrorCallback(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
 	}
 	n.loopOnce.Do(func() { go n.loop() })
@@ -137,7 +137,7 @@ func (n *Notifier) loop() {
 		select {
 		case r := <-n.reportCh:
 			if err := n.sendErrorReport(r); err != nil {
-				n.cfg.Fallback(fmt.Errorf("unable to send error report: %w", err))
+				n.cfg.InternalErrorCallback(fmt.Errorf("unable to send error report: %w", err))
 			}
 		case s := <-n.sessionCh:
 			n.sessions = append(n.sessions, s)
@@ -156,7 +156,7 @@ func (n *Notifier) shutdown(t *time.Ticker) {
 	close(n.reportCh)
 	for r := range n.reportCh {
 		if err := n.sendErrorReport(r); err != nil {
-			n.cfg.Fallback(fmt.Errorf("unable to send error report when closing Notifier: %w", err))
+			n.cfg.InternalErrorCallback(fmt.Errorf("unable to send error report when closing Notifier: %w", err))
 		}
 	}
 
@@ -309,7 +309,7 @@ func makeJSONApp(cfg *Configuration) *JSONApp {
 func (n *Notifier) makeJSONDevice() *JSONDevice {
 	ms, err := memStats()
 	if err != nil {
-		n.cfg.Fallback(fmt.Errorf("unable to gather MemStats: %w", err))
+		n.cfg.InternalErrorCallback(fmt.Errorf("unable to gather MemStats: %w", err))
 	}
 	return &JSONDevice{
 		Hostname:        n.cfg.hostname,
