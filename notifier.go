@@ -30,8 +30,8 @@ type Notifier struct {
 }
 
 type report struct {
-	augmentedCtx context.Context
-	report       *JSONErrorReport
+	ctx    context.Context
+	report *JSONErrorReport
 }
 
 // ErrorReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
@@ -88,6 +88,15 @@ func (n *Notifier) Close() {
 
 // Notify reports the given error to Bugsnag.
 func (n *Notifier) Notify(ctx context.Context, err error) {
+	// Important note: Be careful with contexts in this func.
+	// Context passed into the sanitizer is intended to be independent from the
+	// context returned from the sanitizer.
+	// Ctx returned from makeReport: Deepest (most augmented) ctx may contain a
+	// deadline etc. that was intended for use by the application that's using
+	// Bugsnag.
+	// Ctx returned from sanitizer: Used to control the lifecycle of the HTTP
+	// request to Bugsnag (but not the payload contents). Falls back to the ctx
+	// passed into notify.
 	if err == nil {
 		logErr(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
@@ -95,13 +104,13 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	n.loopOnce.Do(func() { go n.loop() })
 	r := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		if r.augmentedCtx = sanitizer(r.augmentedCtx, r.report); r.augmentedCtx == nil {
+		if ctx = sanitizer(r.ctx, r.report); ctx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
 			return
 		}
 	}
-	n.reportCh <- r
+	n.reportCh <- &report{ctx, r.report}
 }
 
 type severity int
@@ -178,7 +187,7 @@ func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 				},
 			},
 		},
-		augmentedCtx: augmentedCtx,
+		ctx: augmentedCtx,
 	}
 }
 
@@ -196,7 +205,7 @@ func (n *Notifier) sendErrorReport(r *report) {
 	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
 	req.Header.Add("Bugsnag-Payload-Version", "5")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
-	res, err := http.DefaultClient.Do(req.WithContext(r.augmentedCtx))
+	res, err := http.DefaultClient.Do(req.WithContext(r.ctx))
 	if err != nil {
 		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
 		return
