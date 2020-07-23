@@ -77,6 +77,9 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 // Any further calls to StartSession and Notify will panic, so it is your
 // responsibility to only call Close at an appropriate time.
 func (n *Notifier) Close() {
+	// Need to ensure that the loop is running in the first place to not block
+	// if Close is called before StartSession/Notify.
+	n.loopOnce.Do(func() { go n.loop() })
 	// OK, so we have that warning above in the documentation about the panics,
 	// but I'd much rather just drop the sessions/reports. I haven't bothered
 	// figuring out how to do this yet in a clean (race-condition-free) manner.
@@ -151,7 +154,6 @@ type causer interface {
 	Cause() error
 }
 
-// makeReport
 func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 	unhandled := makeUnhandled(err)
 	cd, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
