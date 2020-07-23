@@ -20,15 +20,13 @@ import (
 type Notifier struct {
 	cfg *Configuration
 
-	// sessions
-	sessionCh              chan *session
 	sessions               []*session
 	sessionPublishInterval time.Duration
 
-	loopOnce sync.Once
-
 	reportCh   chan *report
+	sessionCh  chan *session
 	shutdownCh chan struct{}
+	loopOnce   sync.Once
 }
 
 type report struct {
