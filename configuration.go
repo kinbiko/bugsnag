@@ -42,6 +42,12 @@ type Configuration struct {
 	// to Bugsnag.
 	SessionReportSanitizer SessionReportSanitizer
 
+	// Fallback gets invoked with a descriptive error for any internal issues
+	// in the notifier that's preventing normal operation.
+	// Configuring this function may be useful if you need to debug missing
+	// reports or sessions.
+	Fallback func(err error)
+
 	runtimeConstants
 }
 

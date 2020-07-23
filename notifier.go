@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"os/exec"
 	"reflect"
 	"runtime"
@@ -51,6 +50,9 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 	if cfg.EndpointNotify == "" {
 		cfg.EndpointNotify = "https://notify.bugsnag.com"
 		cfg.EndpointSessions = "https://sessions.bugsnag.com"
+	}
+	if cfg.Fallback == nil {
+		cfg.Fallback = func(_ error) {} // Default to a NOOP.
 	}
 	cfg.runtimeConstants = makeRuntimeConstants()
 
@@ -98,7 +100,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	// request to Bugsnag (but not the payload contents). Falls back to the ctx
 	// passed into notify.
 	if err == nil {
-		logErr(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
+		n.cfg.Fallback(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
 	}
 	n.loopOnce.Do(func() { go n.loop() })
@@ -134,29 +136,37 @@ func (n *Notifier) loop() {
 	for {
 		select {
 		case r := <-n.reportCh:
-			n.sendErrorReport(r)
+			if err := n.sendErrorReport(r); err != nil {
+				n.cfg.Fallback(fmt.Errorf("unable to send error report: %w", err))
+			}
 		case s := <-n.sessionCh:
 			n.sessions = append(n.sessions, s)
 		case <-t.C:
 			n.flushSessions()
 		case <-n.shutdownCh:
-			close(n.shutdownCh)
-
-			close(n.reportCh)
-			for r := range n.reportCh {
-				n.sendErrorReport(r)
-			}
-
-			close(n.sessionCh)
-			for s := range n.sessionCh {
-				n.sessions = append(n.sessions, s)
-			}
-
-			t.Stop()
-			n.flushSessions()
+			n.shutdown(t)
 			return
 		}
 	}
+}
+
+func (n *Notifier) shutdown(t *time.Ticker) {
+	close(n.shutdownCh)
+
+	close(n.reportCh)
+	for r := range n.reportCh {
+		if err := n.sendErrorReport(r); err != nil {
+			n.cfg.Fallback(fmt.Errorf("unable to send error report when closing Notifier: %w", err))
+		}
+	}
+
+	close(n.sessionCh)
+	for s := range n.sessionCh {
+		n.sessions = append(n.sessions, s)
+	}
+
+	t.Stop()
+	n.flushSessions()
 }
 
 type causer interface {
@@ -181,7 +191,7 @@ func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 					Breadcrumbs:    cd.breadcrumbs,
 					User:           cd.user,
 					App:            makeJSONApp(n.cfg),
-					Device:         n.cfg.makeJSONDevice(),
+					Device:         n.makeJSONDevice(),
 					Session:        cd.session,
 					Metadata:       cd.metadata,
 				},
@@ -191,15 +201,14 @@ func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 	}
 }
 
-func (n *Notifier) sendErrorReport(r *report) {
+func (n *Notifier) sendErrorReport(r *report) error {
 	b, err := json.Marshal(r.report)
 	if err != nil {
-		logErr(fmt.Errorf("unable to marshal JSON: %w", err))
+		return fmt.Errorf("unable to marshal JSON: %w", err)
 	}
 	req, err := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
 	if err != nil {
-		logErr(fmt.Errorf("unable to create new request: %w", err))
-		return
+		return fmt.Errorf("unable to create new request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
@@ -207,12 +216,9 @@ func (n *Notifier) sendErrorReport(r *report) {
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
 	res, err := http.DefaultClient.Do(req.WithContext(r.ctx))
 	if err != nil {
-		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
-		return
+		return fmt.Errorf("unable to perform HTTP request: %w", err)
 	}
-	if err := res.Body.Close(); err != nil {
-		logErr(err)
-	}
+	return res.Body.Close()
 }
 
 func makeUnhandled(err error) bool {
@@ -300,31 +306,33 @@ func makeJSONApp(cfg *Configuration) *JSONApp {
 	}
 }
 
-func (c *runtimeConstants) makeJSONDevice() *JSONDevice {
+func (n *Notifier) makeJSONDevice() *JSONDevice {
+	ms, err := memStats()
+	if err != nil {
+		n.cfg.Fallback(fmt.Errorf("unable to gather MemStats: %w", err))
+	}
 	return &JSONDevice{
-		Hostname:        c.hostname,
-		OSName:          c.osName,
-		OSVersion:       c.osVersion,
-		MemStats:        memStats(),
+		Hostname:        n.cfg.hostname,
+		OSName:          n.cfg.osName,
+		OSVersion:       n.cfg.osVersion,
+		MemStats:        ms,
 		GoroutineCount:  runtime.NumGoroutine(),
-		RuntimeVersions: map[string]string{"go": c.goVersion},
+		RuntimeVersions: map[string]string{"go": n.cfg.goVersion},
 	}
 }
 
-func memStats() map[string]interface{} {
+func memStats() (map[string]interface{}, error) {
 	m := &runtime.MemStats{}
 	runtime.ReadMemStats(m)
 	b, err := json.Marshal(m)
 	if err != nil {
-		logErr(fmt.Errorf("unable to marshal memstats: %w", err))
-		return nil
+		return nil, fmt.Errorf("unable to marshal memstats: %w", err)
 	}
 
 	memStats := map[string]interface{}{}
 	err = json.Unmarshal(b, &memStats)
 	if err != nil {
-		logErr(fmt.Errorf("unable to unmarshal memstats into a map: %w", err))
-		return nil
+		return nil, fmt.Errorf("unable to unmarshal memstats into a map: %w", err)
 	}
 
 	// These are just to long to add and makes is more likely that we'd hit the
@@ -332,7 +340,7 @@ func memStats() map[string]interface{} {
 	delete(memStats, "PauseNs")
 	delete(memStats, "PauseEnd")
 	delete(memStats, "BySize")
-	return memStats
+	return memStats, nil
 }
 
 // osVersion is only available on unix-like systems as it depends on the
@@ -364,8 +372,4 @@ func extractLowestBugsnagError(err error) *Error {
 		}
 	}
 	return berr
-}
-
-func logErr(err error) {
-	fmt.Fprintf(os.Stderr, "ERROR (bugsnag): %s\n", err.Error())
 }
