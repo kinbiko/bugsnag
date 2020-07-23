@@ -30,8 +30,8 @@ type Notifier struct {
 }
 
 type report struct {
-	ctx    context.Context
-	report *JSONErrorReport
+	augmentedCtx context.Context
+	report       *JSONErrorReport
 }
 
 // ErrorReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
@@ -92,8 +92,7 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	n.loopOnce.Do(func() { go n.loop() })
 	r := n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		ctx = sanitizer(context.Background(), r.report)
-		if ctx == nil {
+		if r.augmentedCtx = sanitizer(r.augmentedCtx, r.report); r.augmentedCtx == nil {
 			// A nil ctx indicates that we should not send the payload.
 			// Useful for testing etc.
 			return
@@ -152,9 +151,10 @@ type causer interface {
 	Cause() error
 }
 
+// makeReport
 func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 	unhandled := makeUnhandled(err)
-	cd, ctx := extractAugmentedContextData(ctx, err, unhandled)
+	cd, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
 	return &report{
 		report: &JSONErrorReport{
 			APIKey:   n.cfg.APIKey,
@@ -176,7 +176,7 @@ func (n *Notifier) makeReport(ctx context.Context, err error) *report {
 				},
 			},
 		},
-		ctx: ctx,
+		augmentedCtx: augmentedCtx,
 	}
 }
 
@@ -194,7 +194,7 @@ func (n *Notifier) sendErrorReport(r *report) {
 	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
 	req.Header.Add("Bugsnag-Payload-Version", "5")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
-	res, err := http.DefaultClient.Do(req.WithContext(r.ctx))
+	res, err := http.DefaultClient.Do(req.WithContext(r.augmentedCtx))
 	if err != nil {
 		logErr(fmt.Errorf("unable to perform HTTP request: %w", err))
 		return
