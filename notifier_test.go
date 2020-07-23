@@ -36,15 +36,17 @@ func TestApp(t *testing.T) {
 }
 
 func TestDevice(t *testing.T) {
-	cfg := Configuration{
-		runtimeConstants: runtimeConstants{
-			hostname:  "myHost",
-			osVersion: "4.1.12",
-			goVersion: "1.15",
-			osName:    "linux innit",
-		},
+	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
+	if err != nil {
+		t.Fatal(err)
 	}
-	payload, err := json.Marshal(cfg.makeJSONDevice())
+	n.cfg.runtimeConstants = runtimeConstants{
+		hostname:  "myHost",
+		osVersion: "4.1.12",
+		goVersion: "1.15",
+		osName:    "linux innit",
+	}
+	payload, err := json.Marshal(n.makeJSONDevice())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,5 +119,36 @@ func TestShuttingDown(t *testing.T) {
 			t.Fatal(err)
 		}
 		n.Close()
+	})
+}
+
+func TestFallback(t *testing.T) {
+	t.Run("gets invoked when set", func(t *testing.T) {
+		var got error
+		n, err := New(Configuration{
+			APIKey:       "abcd1234abcd1234abcd1234abcd1234",
+			ReleaseStage: "dev",
+			AppVersion:   "1.2.3",
+			Fallback: func(err error) {
+				got = err
+			},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		n.Notify(nil, nil) //nolint:staticcheck // Need to verify that the notifier doesn't die
+
+		if got == nil {
+			t.Error("expected an error in the fallback but got none")
+		}
+	})
+
+	t.Run("doesn't panic when not set", func(t *testing.T) {
+		n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		n.Notify(nil, nil) //nolint:staticcheck // Need to verify that the notifier doesn't die
 	})
 }

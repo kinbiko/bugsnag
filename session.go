@@ -47,12 +47,12 @@ func (n *Notifier) flushSessions() {
 	}
 
 	if err := n.publishSessions(n.cfg, sessions); err != nil {
-		logErr(err)
+		n.cfg.Fallback(fmt.Errorf("unable to publish sessions: %w", err))
 	}
 }
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {
-	report := makeJSONSessionReport(cfg, sessions)
+	report := n.makeJSONSessionReport(cfg, sessions)
 	ctx := context.Background()
 	if sanitizer := n.cfg.SessionReportSanitizer; sanitizer != nil {
 		ctx = sanitizer(report)
@@ -116,11 +116,11 @@ func makeJSONSession(ctx context.Context, unhandled bool) *JSONSession {
 	return nil
 }
 
-func makeJSONSessionReport(cfg *Configuration, sessions []*session) *JSONSessionReport {
+func (n *Notifier) makeJSONSessionReport(cfg *Configuration, sessions []*session) *JSONSessionReport {
 	return &JSONSessionReport{
 		Notifier: makeNotifier(cfg),
 		App:      makeJSONApp(cfg),
-		Device:   cfg.makeJSONDevice(),
+		Device:   n.makeJSONDevice(),
 		SessionCounts: []JSONSessionCounts{
 			{
 				// This timestamp assumes that the sessions happen at more or
