@@ -108,5 +108,13 @@ func makeRuntimeConstants() runtimeConstants {
 			}
 		}
 	}
+	// This next line is for developer sanity:
+	// Bugsnag will drop payloads that don't include the notifier payload.
+	// However, it is not set when doing development on the notifier locally --
+	// only when it's imported in another application.
+	// Therefore, set a constant if it is missing from the calculation above.
+	if rc.notifierVersion == "" {
+		rc.notifierVersion = "SNAPSHOT"
+	}
 	return rc
 }
