@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package comments;
+
+service CommentService {
+  rpc GetComment (GetCommentReq) returns (GetCommentRes) {}
+}
+
+message GetCommentReq {
+  string id = 1;
+}
+
+message GetCommentRes {
+  string id = 1;
+  string msg = 2;
+}
