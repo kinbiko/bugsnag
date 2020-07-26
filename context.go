@@ -278,6 +278,9 @@ func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
 		data.metadata = map[string]map[string]interface{}{}
 	}
 	for tab, kvps := range dataMetadata {
+		if data.metadata[tab] == nil {
+			data.metadata[tab] = map[string]interface{}{}
+		}
 		for k, v := range kvps {
 			data.metadata[tab][k] = v
 		}

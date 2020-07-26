@@ -114,9 +114,7 @@ linters-settings:
     # This check is a more useful cyclomatic complexity called cognitive complexity,
     # where nested if/for is weighted more, and only one point regardless of
     # cases in a switch.
-    # This check is set to an unreasonably low number by most developers'
-    # standards to track the code standard over time
-    min-complexity: 10
+    min-complexity: 11
   maligned:
     # print struct with more effective memory layout or not, false by default
     suggest-new: true
