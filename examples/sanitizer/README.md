@@ -8,4 +8,4 @@ This can be useful for:
 -   Removing sensitive data in the payloads (Example: `sanitize`).
 -   Verifying calls to Bugsnag in tests (Example: `tests`),
 -   Improving inaccurate error grouping (Example: `grouping`),
--   Sampling noisy errors before they even reach Bugsnag's servers (Example: `sampling`),
+-   etc.
