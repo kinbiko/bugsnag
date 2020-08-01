@@ -14,9 +14,15 @@ func main() {
 		AppVersion:   "1.2.3",
 		ReleaseStage: "production",
 		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
-			if ev := r.Events[0]; ev.App.ReleaseStage == "production" {
+			ev := r.Events[0]
+			rs := ev.App.ReleaseStage
+			if rs == "production" {
 				ev.User.Name = ""
 				ev.User.Email = ""
+			}
+			// Don't send any reports in dev
+			if rs == "development" {
+				return nil
 			}
 			return context.Background()
 		},

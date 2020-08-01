@@ -24,10 +24,11 @@ type Olly struct {
 type Config struct{ BugsnagAPIKey, AppVersion, ReleaseStage, DatadogAgentAddr string }
 
 func NewO11y(cfg *Config) *Olly {
+	l := logrus.New()
 	return &Olly{
-		Notifier: makeBugsnagNotifier(cfg.BugsnagAPIKey, cfg.AppVersion, cfg.ReleaseStage),
+		Notifier: makeBugsnagNotifier(l, cfg.BugsnagAPIKey, cfg.AppVersion, cfg.ReleaseStage),
 		Client:   makeDatadogClient(cfg.DatadogAgentAddr),
-		Logger:   logrus.New(),
+		Logger:   l,
 	}
 }
 
@@ -42,8 +43,17 @@ func (o *Olly) Log(ctx context.Context, msg string, args ...interface{}) context
 	return bugsnag.WithBreadcrumb(ctx, bugsnag.Breadcrumb{Name: "Info log message", Type: bugsnag.BCTypeLog, Metadata: md})
 }
 
-func makeBugsnagNotifier(apiKey, appVersion, releaseStage string) *bugsnag.Notifier {
-	n, err := bugsnag.New(bugsnag.Configuration{APIKey: apiKey, AppVersion: appVersion, ReleaseStage: releaseStage})
+func makeBugsnagNotifier(l *logrus.Logger, apiKey, appVersion, releaseStage string) *bugsnag.Notifier {
+	n, err := bugsnag.New(bugsnag.Configuration{
+		APIKey:       apiKey,
+		AppVersion:   appVersion,
+		ReleaseStage: releaseStage,
+		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+			// Log whenever we report an exception.
+			l.Error(r.Events[0].Exceptions[0].Message)
+			return context.Background()
+		},
+	})
 	if err != nil {
 		panic(err)
 	}
