@@ -15,7 +15,8 @@ import (
 	"time"
 )
 
-// Notifier is the key type of this package.
+// Notifier is the key type of this package, and exposes methods for reporting
+// errors and tracking sessions.
 type Notifier struct {
 	cfg *Configuration
 
@@ -46,6 +47,8 @@ type report struct {
 type ErrorReportSanitizer func(ctx context.Context, p *JSONErrorReport) context.Context
 
 // New constructs a new Notifier with the given configuration.
+// You should call Close before shutting down your app in order to ensure that
+// all sessions and reports have been sent.
 func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
 	if cfg.EndpointNotify == "" {
 		cfg.EndpointNotify = "https://notify.bugsnag.com"
@@ -89,6 +92,9 @@ func (n *Notifier) Close() {
 }
 
 // Notify reports the given error to Bugsnag.
+// Extracts diagnostic data from the context and any *bugsnag.Error errors,
+// including wrapped errors.
+// Invokes the ErrorReportSanitizer before sending the error report.
 func (n *Notifier) Notify(ctx context.Context, err error) {
 	// Important note: Be careful with contexts in this func.
 	// Context passed into the sanitizer is intended to be independent from the

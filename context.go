@@ -15,8 +15,8 @@ const (
 	ctxDataKey
 )
 
-// Serialize extraxts all the diagnostic data tracked within the given ctx to a
-// string that can later be deserialized using Deserialize. Useful for passing
+// Serialize extracts all the diagnostic data tracked within the given ctx to a
+// []byte that can later be deserialized using Deserialize. Useful for passing
 // diagnostic to downstream services in header values.
 func Serialize(ctx context.Context) []byte {
 	b, err := json.Marshal(getAttachedContextData(ctx))
@@ -31,8 +31,12 @@ func Serialize(ctx context.Context) []byte {
 // server middleware to attach diagnostic data identified from upstream
 // services. As a result, any existing diagnostic data (session data from
 // StartSession not inclusive) will be wiped.
-func Deserialize(ctx context.Context, base64Data []byte) context.Context {
-	jsonData, err := base64.StdEncoding.DecodeString(string(base64Data))
+// Note: If the upstream service attaches sensitive data this service should
+// not report (e.g. user info), then this too will be propagated in this
+// context, and you will have to use the ErrorReportSanitizer to remove this
+// data.
+func Deserialize(ctx context.Context, data []byte) context.Context {
+	jsonData, err := base64.StdEncoding.DecodeString(string(data))
 	if err != nil {
 		return ctx
 	}

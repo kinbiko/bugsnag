@@ -48,16 +48,20 @@ func (e *Error) Unwrap() error {
 	return e.Err
 }
 
-// Wrap attaches ctx data and wraps the given error with message (does not wrap
-// the given error if no message was given)
-// Convenience wrapper for bugsnag.Wrap so that the Notifier may be passed
-// around in application code without needing to import this package.
+// Wrap attaches ctx data and wraps the given error with message, and
+// associates a stacktrace to the error based on the frame at which Wrap was
+// called.
+// Any attached diagnostic data from this ctx will be preserved should you
+// return the returned error further up the stack.
 func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
 	return Wrap(ctx, err, msgAndFmtArgs...)
 }
 
-// Wrap attaches ctx data and wraps the given error with message (does not wrap
-// the given error if no message was given).
+// Wrap attaches ctx data and wraps the given error with message, and
+// associates a stacktrace to the error based on the frame at which Wrap was
+// called.
+// Any attached diagnostic data from this ctx will be preserved should you
+// return the returned error further up the stack.
 func Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
 	if err == nil {
 		return nil
