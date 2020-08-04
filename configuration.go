@@ -11,16 +11,26 @@ import (
 )
 
 // Configuration represents all of the possible configurations for the notifier.
+// Only APIKey, AppVersion, and ReleaseStage is required.
 type Configuration struct {
 
 	// Required configuration options:
 
-	// The 32 hex-character API Key for your Bugsnag project.
+	// The 32 hex-character API Key that identifies your Bugsnag project.
 	APIKey string
 	// The version of your application, as semver.
+	// **Strictly** speaking, Bugsnag doesn't require you to use semver, but in
+	// Go this is **highly** recommended (esp. with go mod). If you absolutely
+	// *have* to use a non-semver AppVersion, set this configuration option to
+	// any valid semver, and change the AppVersion as part of of your
+	// ErrorReportSanitizer.
 	AppVersion string
 	// The stage in your release cycle, e.g. "development", "production", etc.
 	// Any non-empty value is valid.
+	// **Strictly** speaking, Bugsnag doesn't require you to set this field.
+	// However, **a lot** of the features in Bugsnag are
+	// significantly improved by setting this field, so it is required in this
+	// package.
 	ReleaseStage string
 
 	// Optional configuration options:
@@ -28,18 +38,20 @@ type Configuration struct {
 	// The endpoint to send error reports to. Configure if you're
 	// using an on-premise installation of Bugsnag. Defaults to
 	// https://notify.bugsnag.com
+	// If this field is set you must also set EndpointSessions.
 	EndpointNotify string
 	// The endpoint to send sessions to. Configure if you're using an
 	// on-premise installation of Bugsnag. Defaults to
 	// https://sessions.bugsnag.com
+	// If this field is set you must also set EndpointNotify.
 	EndpointSessions string
 
 	// If defined it will be invoked just before each error report API call to
-	// Bugsnag.
+	// Bugsnag. See the GoDoc on the ErrorReportSanitizer type for more details.
 	ErrorReportSanitizer ErrorReportSanitizer
 
 	// If defined it will be invoked just before each session report API call
-	// to Bugsnag.
+	// to Bugsnag. See the GoDoc on the SessionReportSanitizer type for more details.
 	SessionReportSanitizer SessionReportSanitizer
 
 	// InternalErrorCallback gets invoked with a descriptive error for any
