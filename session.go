@@ -29,6 +29,10 @@ type SessionReportSanitizer func(p *JSONSessionReport) context.Context
 // context.Context, and returns the new context.Context.
 // Records the newly started session and will at some point flush this session.
 func (n *Notifier) StartSession(ctx context.Context) context.Context {
+	// Ideally we wouldn't need this guard, but it's the best way I can see to
+	// prevent this package from ever panicking.
+	defer n.guard("StartSession")
+
 	n.loopOnce.Do(func() { go n.loop() })
 	session := &session{
 		StartedAt:   time.Now(),
