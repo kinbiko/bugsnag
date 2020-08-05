@@ -6,7 +6,7 @@
 [![Go Documentation](http://img.shields.io/badge/godoc-documentation-blue.svg?style=flat)](https://pkg.go.dev/github.com/kinbiko/bugsnag?tab=doc)
 [![License](https://img.shields.io/github/license/kinbiko/bugsnag.svg?style=flat)](https://github.com/kinbiko/mokku/blob/master/.github/LICENSE)
 
-**Unofficial** rewrite of the [Bugsnag Go notifier](https://github.com/bugsnag/bugsnag-go).
+Well-documented, maintainable, idiomatic, opinionated, and **unofficial** rewrite of the [Bugsnag Go notifier](https://github.com/bugsnag/bugsnag-go).
 
 ## Usage
 
