@@ -79,12 +79,17 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 }
 
 // Close shuts down the notifier, flushing any unsent reports and sessions.
-// Any further calls to StartSession and Notify will panic, so it is your
-// responsibility to only call Close at an appropriate time.
+// Any further calls to StartSession and Notify will call the
+// InternalErrorCallback, if provided, with an error.
 func (n *Notifier) Close() {
+	// Ideally we wouldn't need this guard, but it's the best way I can see to
+	// prevent this package from ever panicking.
+	defer n.guard("Close")
+
 	// Need to ensure that the loop is running in the first place to not block
 	// if Close is called before StartSession/Notify.
 	n.loopOnce.Do(func() { go n.loop() })
+
 	// OK, so we have that warning above in the documentation about the panics,
 	// but I'd much rather just drop the sessions/reports. I haven't bothered
 	// figuring out how to do this yet in a clean (race-condition-free) manner.
@@ -96,6 +101,10 @@ func (n *Notifier) Close() {
 // including wrapped errors.
 // Invokes the ErrorReportSanitizer before sending the error report.
 func (n *Notifier) Notify(ctx context.Context, err error) {
+	// Ideally we wouldn't need this guard, but it's the best way I can see to
+	// prevent this package from ever panicking.
+	defer n.guard("Notify")
+
 	// Important note: Be careful with contexts in this func.
 	// Context passed into the sanitizer is intended to be independent from the
 	// context returned from the sanitizer.
@@ -378,4 +387,10 @@ func extractLowestBugsnagError(err error) *Error {
 		}
 	}
 	return berr
+}
+
+func (n *Notifier) guard(method string) {
+	if p := recover(); p != nil && n.cfg.InternalErrorCallback != nil {
+		n.cfg.InternalErrorCallback(fmt.Errorf("panic when calling %s (did you invoke %s after calling Close?): %v", method, method, p))
+	}
 }
