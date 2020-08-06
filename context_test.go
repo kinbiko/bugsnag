@@ -67,7 +67,7 @@ func TestCtxSerialization(t *testing.T) {
 	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
 	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
 	ctx = n.WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
-	ctx = WithBugsnagContext(ctx, "/pokemon?type=fire")
+	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")
 
 	t.Run("json serialization", func(t *testing.T) {
 		b, _ := json.Marshal(getAttachedContextData(ctx))

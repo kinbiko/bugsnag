@@ -67,7 +67,7 @@ func TestMakeExceptions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := WithBugsnagContext(context.Background(), "/api/user/1523")
+	ctx := n.WithBugsnagContext(context.Background(), "/api/user/1523")
 	ctx = WithMetadatum(ctx, "tab", "one", "1")
 
 	err = errors.New("1st error (errors.New)")
