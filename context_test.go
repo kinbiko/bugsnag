@@ -55,6 +55,8 @@ func TestMetadata(t *testing.T) {
 }
 
 func TestCtxSerialization(t *testing.T) {
+	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
+
 	ctx := context.Background()
 	ctx = WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
 	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
@@ -73,7 +75,10 @@ func TestCtxSerialization(t *testing.T) {
 	})
 
 	t.Run("serialize + deserialize yields the same data", func(t *testing.T) {
-		ctx = Deserialize(context.Background(), Serialize(ctx))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ctx = n.Deserialize(context.Background(), n.Serialize(ctx))
 		b, _ := json.Marshal(getAttachedContextData(ctx))
 		jsonassert.New(t).Assertf(string(b), `{
 			"cx": "/pokemon?type=fire",
