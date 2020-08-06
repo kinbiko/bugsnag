@@ -47,8 +47,8 @@ func TestContextWithMethods(t *testing.T) {
 	})
 
 	t.Run("WithMetadata and WithMetadatum", func(t *testing.T) {
-		ctx := WithMetadatum(context.Background(), "app", "id", "15011-2")
-		ctx = WithMetadata(ctx, "device", map[string]interface{}{"model": "15023-2"})
+		ctx := n.WithMetadatum(context.Background(), "app", "id", "15011-2")
+		ctx = n.WithMetadata(ctx, "device", map[string]interface{}{"model": "15023-2"})
 		md := Metadata(ctx)
 		if appID, exp := md["app"]["id"], "15011-2"; appID != exp {
 			t.Errorf("expected app.id to be '%s' but was '%s'", exp, appID)
@@ -64,8 +64,8 @@ func TestCtxSerialization(t *testing.T) {
 
 	ctx := context.Background()
 	ctx = n.WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
-	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
-	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
+	ctx = n.WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
+	ctx = n.WithMetadatum(ctx, "app", "types", []string{"fire"})
 	ctx = n.WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
 	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")
 

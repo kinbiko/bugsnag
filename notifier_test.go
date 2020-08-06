@@ -68,11 +68,11 @@ func TestMakeExceptions(t *testing.T) {
 	}
 
 	ctx := n.WithBugsnagContext(context.Background(), "/api/user/1523")
-	ctx = WithMetadatum(ctx, "tab", "one", "1")
+	ctx = n.WithMetadatum(ctx, "tab", "one", "1")
 
 	err = errors.New("1st error (errors.New)")
 	err = fmt.Errorf("2nd error (github.com/pkg/errors.Wrap): %w", err)
-	err = n.Wrap(WithMetadatum(ctx, "tab", "two", "2"), err, "3rd error (%s.(*Notifier).Wrap)", "bugsnag")
+	err = n.Wrap(n.WithMetadatum(ctx, "tab", "two", "2"), err, "3rd error (%s.(*Notifier).Wrap)", "bugsnag")
 	err = fmt.Errorf("4th error (fmt.Errorf('percent-w')): %w", err)
 
 	eps := makeExceptions(err)
