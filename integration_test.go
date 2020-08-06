@@ -59,7 +59,7 @@ func TestIntegration(t *testing.T) {
 		Metadata: map[string]interface{}{"md": "bar"},
 	})
 
-	ctx = bugsnag.WithBugsnagContext(ctx, "User batch job")
+	ctx = ntf.WithBugsnagContext(ctx, "User batch job")
 
 	ctx = bugsnag.WithMetadata(ctx, "myTab", map[string]interface{}{"hello": 423})
 	ctx = bugsnag.WithMetadatum(ctx, "myTab", "goodbye", "cruel world")

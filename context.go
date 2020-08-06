@@ -187,7 +187,11 @@ func (n *Notifier) WithUser(ctx context.Context, user User) context.Context {
 // WithBugsnagContext applies the given bContext as the "Context" for the errors that
 // show up in your Bugsnag dashboard. The naming here is unfortunate, but to be
 // fair, Bugsnag had this nomenclature before Go did...
-func WithBugsnagContext(ctx context.Context, bContext string) context.Context {
+func (n *Notifier) WithBugsnagContext(ctx context.Context, bContext string) context.Context {
+	// This function currently uses no features of the Notifier type, however
+	// we're attaching it to the Notifier to ensure that we can use
+	// Notifier-only functionalities in the future AND so that users need only
+	// import the bugsnag package in a single location in their app.
 	cd := getAttachedContextData(ctx)
 	cd.BContext = bContext
 	return context.WithValue(ctx, ctxDataKey, cd)
