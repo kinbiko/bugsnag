@@ -9,6 +9,10 @@ import (
 )
 
 func TestBreadcrumbs(t *testing.T) {
+	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	asJSON := func(s interface{}) string {
 		b, err := json.Marshal(s)
 		if err != nil {
@@ -21,8 +25,8 @@ func TestBreadcrumbs(t *testing.T) {
 	expNewest := Breadcrumb{Name: "newest", Type: BCTypeLog, Metadata: map[string]interface{}{"md": 1}}
 
 	ctx := context.Background()
-	ctx = WithBreadcrumb(ctx, expLatest)
-	ctx = WithBreadcrumb(ctx, expNewest)
+	ctx = n.WithBreadcrumb(ctx, expLatest)
+	ctx = n.WithBreadcrumb(ctx, expNewest)
 
 	bcs := makeBreadcrumbs(ctx)
 
@@ -58,7 +62,7 @@ func TestCtxSerialization(t *testing.T) {
 	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
 
 	ctx := context.Background()
-	ctx = WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
+	ctx = n.WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
 	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
 	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
 	ctx = WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})

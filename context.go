@@ -124,7 +124,11 @@ type Breadcrumb struct {
 
 // WithBreadcrumb attaches a breadcrumb to the top of the stack of breadcrumbs
 // stored in the given context.
-func WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
+func (n *Notifier) WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
+	// This function currently uses no features of the Notifier type, however
+	// we're attaching it to the Notifier to ensure that we can use
+	// Notifier-only functionalities in the future AND so that users need only
+	// import the bugsnag package in a single location in their app.
 	if b.Timestamp.IsZero() {
 		b.Timestamp = time.Now().UTC()
 	}
