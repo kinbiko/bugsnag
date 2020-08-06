@@ -41,7 +41,7 @@ func TestContextWithMethods(t *testing.T) {
 
 	t.Run("WithUser", func(t *testing.T) {
 		exp := User{ID: "id", Name: "name", Email: "email"}
-		if got := getAttachedContextData(WithUser(context.Background(), exp)).User; *got != exp {
+		if got := getAttachedContextData(n.WithUser(context.Background(), exp)).User; *got != exp {
 			t.Errorf("expected that when I add '%+v' to the context what I get back ('%+v') should be equal", exp, got)
 		}
 	})
@@ -66,7 +66,7 @@ func TestCtxSerialization(t *testing.T) {
 	ctx = n.WithBreadcrumb(ctx, Breadcrumb{Name: "log event", Type: BCTypeLog, Metadata: map[string]interface{}{"msg": "ruh roh"}})
 	ctx = WithMetadata(ctx, "app", map[string]interface{}{"nick": "charmander"})
 	ctx = WithMetadatum(ctx, "app", "types", []string{"fire"})
-	ctx = WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
+	ctx = n.WithUser(ctx, User{ID: "qwpeoiub", Name: "charlie", Email: "charlie@pokemon.example.com"})
 	ctx = WithBugsnagContext(ctx, "/pokemon?type=fire")
 
 	t.Run("json serialization", func(t *testing.T) {

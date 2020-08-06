@@ -40,7 +40,7 @@ func TestIntegration(t *testing.T) {
 		ReleaseStage:     "staging",
 	})
 
-	ctx := bugsnag.WithUser(context.Background(), bugsnag.User{
+	ctx := ntf.WithUser(context.Background(), bugsnag.User{
 		ID:    "1234",
 		Name:  "River Tam",
 		Email: "river@serenity.space",
