@@ -18,9 +18,10 @@ const (
 // Serialize extracts all the diagnostic data tracked within the given ctx to a
 // []byte that can later be deserialized using Deserialize. Useful for passing
 // diagnostic to downstream services in header values.
-func Serialize(ctx context.Context) []byte {
+func (n *Notifier) Serialize(ctx context.Context) []byte {
 	b, err := json.Marshal(getAttachedContextData(ctx))
 	if err != nil {
+		n.cfg.InternalErrorCallback(err)
 		return nil
 	}
 	return []byte(base64.StdEncoding.EncodeToString(b))
@@ -35,13 +36,15 @@ func Serialize(ctx context.Context) []byte {
 // not report (e.g. user info), then this too will be propagated in this
 // context, and you will have to use the ErrorReportSanitizer to remove this
 // data.
-func Deserialize(ctx context.Context, data []byte) context.Context {
+func (n *Notifier) Deserialize(ctx context.Context, data []byte) context.Context {
 	jsonData, err := base64.StdEncoding.DecodeString(string(data))
 	if err != nil {
+		n.cfg.InternalErrorCallback(err)
 		return ctx
 	}
 	cd := &ctxData{}
 	if err := json.Unmarshal(jsonData, cd); err != nil {
+		n.cfg.InternalErrorCallback(err)
 		return ctx
 	}
 	return context.WithValue(ctx, ctxDataKey, cd)

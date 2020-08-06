@@ -390,7 +390,7 @@ func extractLowestBugsnagError(err error) *Error {
 }
 
 func (n *Notifier) guard(method string) {
-	if p := recover(); p != nil && n.cfg.InternalErrorCallback != nil {
+	if p := recover(); p != nil {
 		n.cfg.InternalErrorCallback(fmt.Errorf("panic when calling %s (did you invoke %s after calling Close?): %v", method, method, p))
 	}
 }
