@@ -174,7 +174,11 @@ type User struct {
 // WithUser attaches the given User data to the given context, such that it can
 // later be provided to the Notify method, and have this data show up in your
 // dashboard.
-func WithUser(ctx context.Context, user User) context.Context {
+func (n *Notifier) WithUser(ctx context.Context, user User) context.Context {
+	// This function currently uses no features of the Notifier type, however
+	// we're attaching it to the Notifier to ensure that we can use
+	// Notifier-only functionalities in the future AND so that users need only
+	// import the bugsnag package in a single location in their app.
 	cd := getAttachedContextData(ctx)
 	cd.User = &user
 	return context.WithValue(ctx, ctxDataKey, cd)
