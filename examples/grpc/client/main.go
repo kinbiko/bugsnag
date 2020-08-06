@@ -13,6 +13,10 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
+type application struct {
+	ntf *bugsnag.Notifier
+}
+
 func main() {
 	ctx := context.Background()
 	notifier, err := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "v1.2.3", ReleaseStage: "dev"})
@@ -20,6 +24,8 @@ func main() {
 		fmt.Fprintf(os.Stderr, "couldn't create Bugsnag notifier: %s", err.Error())
 	}
 	defer notifier.Close()
+
+	app := &application{ntf: notifier}
 
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
@@ -31,12 +37,12 @@ func main() {
 
 	for {
 		time.Sleep(1 * time.Second)
-		callServer(ctx, client)
+		app.callServer(ctx, client)
 	}
 }
 
-func callServer(ctx context.Context, client pb.CommentServiceClient) {
-	ctx = bugsnag.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
+func (a *application) callServer(ctx context.Context, client pb.CommentServiceClient) {
+	ctx = a.ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
 		Name: "gRPC call",
 		Metadata: map[string]interface{}{
 			"invoked at": time.Now().Format(time.RFC3339),
@@ -44,10 +50,10 @@ func callServer(ctx context.Context, client pb.CommentServiceClient) {
 		},
 	})
 
-	ctx = bugsnag.WithBugsnagContext(ctx, "users/123/comments") // Pretend that this is a HTTP endpoint that initiated the gRPC call
-	ctx = bugsnag.WithMetadata(ctx, "gRPC", map[string]interface{}{"client": "comments"})
-	ctx = bugsnag.WithUser(ctx, bugsnag.User{ID: "123", Name: "River Tam", Email: "river@serentiy.space"})
-	ctx = metadata.AppendToOutgoingContext(ctx, "bugsnag-diagnostics", string(bugsnag.Serialize(ctx)))
+	ctx = a.ntf.WithBugsnagContext(ctx, "users/123/comments") // Pretend that this is a HTTP endpoint that initiated the gRPC call
+	ctx = a.ntf.WithMetadata(ctx, "gRPC", map[string]interface{}{"client": "comments"})
+	ctx = a.ntf.WithUser(ctx, bugsnag.User{ID: "123", Name: "River Tam", Email: "river@serentiy.space"})
+	ctx = metadata.AppendToOutgoingContext(ctx, "bugsnag-diagnostics", string(a.ntf.Serialize(ctx)))
 
 	fmt.Println("invoking GetComment")
 	_, _ = client.GetComment(ctx, &pb.GetCommentReq{Id: "123"})

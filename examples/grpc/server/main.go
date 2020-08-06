@@ -26,9 +26,9 @@ func main() {
 }
 
 func (s *server) bugsnagMiddleware(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (res interface{}, err error) {
-	ctx = bugsnag.WithMetadatum(ctx, "app", "id", "comments-server")
+	ctx = s.WithMetadatum(ctx, "app", "id", "comments-server")
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		ctx = bugsnag.Deserialize(ctx, []byte(md["bugsnag-diagnostics"][0]))
+		ctx = s.Deserialize(ctx, []byte(md["bugsnag-diagnostics"][0]))
 	}
 	defer func() {
 		if r := recover(); r != nil {

@@ -23,7 +23,7 @@ func main() {
 		panic(err)
 	}
 	s := &server{Notifier: n}
-	http.ListenAndServe(":8080", withRequestMetadata(withPanicReporting(s.Notifier, s.HandleCommentsGet())))
+	http.ListenAndServe(":8080", s.withRequestMetadata(withPanicReporting(s.Notifier, s.HandleCommentsGet())))
 }
 
 func (s *server) HandleCommentsGet() http.HandlerFunc {
@@ -39,7 +39,7 @@ func (s *server) HandleCommentsGet() http.HandlerFunc {
 	}
 }
 
-func withRequestMetadata(h http.Handler) http.HandlerFunc {
+func (s *server) withRequestMetadata(h http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		bytes, _ := ioutil.ReadAll(r.Body)
 		body := map[string]interface{}{}
@@ -55,7 +55,7 @@ func withRequestMetadata(h http.Handler) http.HandlerFunc {
 		if r.Method == http.MethodGet {
 			delete(request, "body")
 		}
-		ctx := bugsnag.WithMetadata(r.Context(), "request", request)
+		ctx := s.WithMetadata(r.Context(), "request", request)
 
 		h.ServeHTTP(w, r.WithContext(ctx))
 	})

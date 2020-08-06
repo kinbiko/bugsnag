@@ -29,7 +29,7 @@ func main() {
 	})
 	defer n.Close()
 
-	ctx := bugsnag.WithUser(context.Background(), bugsnag.User{
+	ctx := n.WithUser(context.Background(), bugsnag.User{
 		ID: "123",
 		// The next two fields will be sanitized in production.
 		Name:  "River Tam",

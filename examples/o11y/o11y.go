@@ -35,12 +35,12 @@ func NewO11y(cfg *Config) *Olly {
 // Log logs the given message at INFO severity, including log metadata
 // provided in the context, formatting the message if appropriate.
 func (o *Olly) Log(ctx context.Context, msg string, args ...interface{}) context.Context {
-	md := metadata(ctx)
+	md := o.metadata(ctx)
 	delete(md, "request.headers")
 	message := fmt.Sprintf(msg, args...)
 	o.WithFields(logrus.Fields(md)).Infof(message)
 	md["message"] = message
-	return bugsnag.WithBreadcrumb(ctx, bugsnag.Breadcrumb{Name: "Info log message", Type: bugsnag.BCTypeLog, Metadata: md})
+	return o.WithBreadcrumb(ctx, bugsnag.Breadcrumb{Name: "Info log message", Type: bugsnag.BCTypeLog, Metadata: md})
 }
 
 func makeBugsnagNotifier(l *logrus.Logger, apiKey, appVersion, releaseStage string) *bugsnag.Notifier {
@@ -68,9 +68,9 @@ func makeDatadogClient(addr string) *statsd.Client {
 	return c
 }
 
-func metadata(ctx context.Context) map[string]interface{} {
+func (o *Olly) metadata(ctx context.Context) map[string]interface{} {
 	var (
-		bmd = bugsnag.Metadata(ctx)
+		bmd = o.Metadata(ctx)
 		md  = map[string]interface{}{}
 	)
 

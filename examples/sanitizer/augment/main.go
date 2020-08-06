@@ -22,6 +22,6 @@ func main() {
 	})
 	defer n.Close()
 
-	ctx := bugsnag.WithMetadatum(context.Background(), "app", "someCustomProperty", "someCustomValue")
+	ctx := n.WithMetadatum(context.Background(), "app", "someCustomProperty", "someCustomValue")
 	n.Notify(ctx, fmt.Errorf("oh ploppers"))
 }
