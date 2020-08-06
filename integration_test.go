@@ -47,13 +47,13 @@ func TestIntegration(t *testing.T) {
 	})
 	ctx = ntf.StartSession(ctx)
 
-	ctx = bugsnag.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
+	ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
 		Name:     "something happened",
 		Type:     bugsnag.BCTypeProcess,
 		Metadata: map[string]interface{}{"md": "foo"},
 	})
 
-	ctx = bugsnag.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
+	ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
 		Name:     "something else happened",
 		Type:     bugsnag.BCTypeRequest,
 		Metadata: map[string]interface{}{"md": "bar"},
