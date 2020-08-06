@@ -201,17 +201,21 @@ func (n *Notifier) WithBugsnagContext(ctx context.Context, bContext string) cont
 // Bugsnag dashboard. You may use the following tab names to add data to
 // existing/common tabs in the dashboard with the same name:
 //   "user", "app", "device", "request"
-func WithMetadatum(ctx context.Context, tab, key string, value interface{}) context.Context {
+func (n *Notifier) WithMetadatum(ctx context.Context, tab, key string, value interface{}) context.Context {
 	m := initializeMetadataTab(ctx, tab)
 	m[tab][key] = value
-	return WithMetadata(ctx, tab, m[tab])
+	return n.WithMetadata(ctx, tab, m[tab])
 }
 
 // WithMetadata attaches the given data under the provided tab in the
 // Bugsnag dashboard. You may use the following tab names to add data to
 // existing/common tabs in the dashboard with the same name:
 //   "user", "app", "device", "request"
-func WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
+func (n *Notifier) WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
+	// This function currently uses no features of the Notifier type, however
+	// we're attaching it to the Notifier to ensure that we can use
+	// Notifier-only functionalities in the future AND so that users need only
+	// import the bugsnag package in a single location in their app.
 	m := initializeMetadataTab(ctx, tab)
 	m[tab] = data
 	cd := getAttachedContextData(ctx)
