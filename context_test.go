@@ -49,7 +49,7 @@ func TestContextWithMethods(t *testing.T) {
 	t.Run("WithMetadata and WithMetadatum", func(t *testing.T) {
 		ctx := n.WithMetadatum(context.Background(), "app", "id", "15011-2")
 		ctx = n.WithMetadata(ctx, "device", map[string]interface{}{"model": "15023-2"})
-		md := Metadata(ctx)
+		md := n.Metadata(ctx)
 		if appID, exp := md["app"]["id"], "15011-2"; appID != exp {
 			t.Errorf("expected app.id to be '%s' but was '%s'", exp, appID)
 		}

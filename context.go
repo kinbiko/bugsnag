@@ -225,12 +225,16 @@ func (n *Notifier) WithMetadata(ctx context.Context, tab string, data map[string
 
 // Metadata pulls out all the metadata known by this package as a
 // map[tab]map[key]value from the given context.
-func Metadata(ctx context.Context) map[string]map[string]interface{} {
+func (n *Notifier) Metadata(ctx context.Context) map[string]map[string]interface{} {
+	// This function currently uses no features of the Notifier type, however
+	// we're attaching it to the Notifier to ensure that we can use
+	// Notifier-only functionalities in the future AND so that users need only
+	// import the bugsnag package in a single location in their app.
 	return getAttachedContextData(ctx).Metadata
 }
 
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
-	m := Metadata(ctx)
+	m := getAttachedContextData(ctx).Metadata
 	if m == nil {
 		m = map[string]map[string]interface{}{}
 	}
@@ -255,7 +259,7 @@ func extractAugmentedContextData(ctx context.Context, err error, unhandled bool)
 		breadcrumbs: makeBreadcrumbs(ctx),
 		user:        getAttachedContextData(ctx).User,
 		session:     makeJSONSession(ctx, unhandled),
-		metadata:    Metadata(ctx),
+		metadata:    getAttachedContextData(ctx).Metadata,
 	}
 	lowestCtx := ctx
 	var e error = err
@@ -293,7 +297,7 @@ func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
 		data.session = dataSession
 	}
 
-	dataMetadata := Metadata(ctx)
+	dataMetadata := getAttachedContextData(ctx).Metadata
 	if dataMetadata == nil {
 		return
 	}
