@@ -22,8 +22,13 @@ jobs:
     - name: Build
       run: go build -v .
 
+      # Running tests with and without the race checker, as certain tests are
+      # only run when the race checker is not enabled
     - name: Test
       run: go test -v ./...
+
+    - name: Test (race)
+      run: go test -race -v ./...
 
     - name: Install Linter
       run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.27.0
