@@ -23,28 +23,19 @@ type Notifier struct {
 	sessions               []*session
 	sessionPublishInterval time.Duration
 
-	reportCh   chan *report
+	reportCh   chan *JSONErrorReport
 	sessionCh  chan *session
 	shutdownCh chan struct{}
 	loopOnce   sync.Once
 }
 
-type report struct {
-	ctx    context.Context
-	report *JSONErrorReport
-}
-
 // ErrorReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
-// No further modifications will happen to the payload after this is run.
-// You may return a nil Context in order to prevent the payload from being sent at all.
-// This context will be attached to the http.Request used for the request to
-// Bugsnag, so you are also free to set deadlines etc as you see fit.
 // The ctx param provided will be the ctx from the deepest location where
 // Wrap is called, falling back to the ctx given to Notify.
-// It is recommended to return an unrelated ctx from this method instead of
-// a derivative of the input ctx, as the deadline properties etc. of the
-// returned ctx is used in the HTTP request to Bugsnag.
-type ErrorReportSanitizer func(ctx context.Context, p *JSONErrorReport) context.Context
+// You may return a non-nil error in order to prevent the payload from being sent at all.
+// This error is then forwarded to the InternalErrorCallback.
+// No further modifications to the payload will happen to the payload after this is run.
+type ErrorReportSanitizer func(ctx context.Context, p *JSONErrorReport) error
 
 // New constructs a new Notifier with the given configuration.
 // You should call Close before shutting down your app in order to ensure that
@@ -72,7 +63,7 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 		sessionPublishInterval: time.Minute,
 
 		sessionCh: make(chan *session, bufChanSize),
-		reportCh:  make(chan *report, bufChanSize),
+		reportCh:  make(chan *JSONErrorReport, bufChanSize),
 
 		shutdownCh: make(chan struct{}),
 	}, nil
@@ -106,28 +97,24 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 	defer n.guard("Notify")
 
 	// Important note: Be careful with contexts in this func.
-	// Context passed into the sanitizer is intended to be independent from the
-	// context returned from the sanitizer.
-	// Ctx returned from makeReport: Deepest (most augmented) ctx may contain a
-	// deadline etc. that was intended for use by the application that's using
-	// Bugsnag.
-	// Ctx returned from sanitizer: Used to control the lifecycle of the HTTP
-	// request to Bugsnag (but not the payload contents). Falls back to the ctx
-	// passed into notify.
+	// The ctx passed to the reportCh should not be derived from the ctx param
+	// of Notify, as it is likely that the Notify param will cancel before the
+	// HTTP request to Bugsnag can be sent.
 	if err == nil {
 		n.cfg.InternalErrorCallback(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
 	}
 	n.loopOnce.Do(func() { go n.loop() })
-	r := n.makeReport(ctx, err)
+
+	var report *JSONErrorReport
+	report, ctx = n.makeReport(ctx, err)
 	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		if ctx = sanitizer(r.ctx, r.report); ctx == nil {
-			// A nil ctx indicates that we should not send the payload.
-			// Useful for testing etc.
+		if sErr := sanitizer(ctx, report); sErr != nil {
+			n.cfg.InternalErrorCallback(sErr)
 			return
 		}
 	}
-	n.reportCh <- &report{ctx, r.report}
+	n.reportCh <- report
 }
 
 type severity int
@@ -188,36 +175,33 @@ type causer interface {
 	Cause() error
 }
 
-func (n *Notifier) makeReport(ctx context.Context, err error) *report {
+func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport, context.Context) {
 	unhandled := makeUnhandled(err)
 	cd, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
-	return &report{
-		report: &JSONErrorReport{
-			APIKey:   n.cfg.APIKey,
-			Notifier: makeNotifier(n.cfg),
-			Events: []*JSONEvent{
-				{
-					PayloadVersion: "5",
-					Context:        cd.bContext,
-					Unhandled:      unhandled,
-					Severity:       makeSeverity(err),
-					SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
-					Exceptions:     makeExceptions(err),
-					Breadcrumbs:    cd.breadcrumbs,
-					User:           cd.user,
-					App:            makeJSONApp(n.cfg),
-					Device:         n.makeJSONDevice(),
-					Session:        cd.session,
-					Metadata:       cd.metadata,
-				},
+	return &JSONErrorReport{
+		APIKey:   n.cfg.APIKey,
+		Notifier: makeNotifier(n.cfg),
+		Events: []*JSONEvent{
+			{
+				PayloadVersion: "5",
+				Context:        cd.bContext,
+				Unhandled:      unhandled,
+				Severity:       makeSeverity(err),
+				SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
+				Exceptions:     makeExceptions(err),
+				Breadcrumbs:    cd.breadcrumbs,
+				User:           cd.user,
+				App:            makeJSONApp(n.cfg),
+				Device:         n.makeJSONDevice(),
+				Session:        cd.session,
+				Metadata:       cd.metadata,
 			},
 		},
-		ctx: augmentedCtx,
-	}
+	}, augmentedCtx
 }
 
-func (n *Notifier) sendErrorReport(r *report) error {
-	b, err := json.Marshal(r.report)
+func (n *Notifier) sendErrorReport(r *JSONErrorReport) error {
+	b, err := json.Marshal(r)
 	if err != nil {
 		return fmt.Errorf("unable to marshal JSON: %w", err)
 	}
@@ -229,7 +213,11 @@ func (n *Notifier) sendErrorReport(r *report) error {
 	req.Header.Add("Bugsnag-Api-Key", n.cfg.APIKey)
 	req.Header.Add("Bugsnag-Payload-Version", "5")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
-	res, err := http.DefaultClient.Do(req.WithContext(r.ctx))
+	// Note we're using a background context here to avoid confusing bugs ala
+	// "my errors aren't being sent to Bugsnag" due to users not realizing that
+	// the context they provided (which usually is derived from a request) has
+	// already been canceled by the time that this request is being made.
+	res, err := http.DefaultClient.Do(req.WithContext(context.Background()))
 	if err != nil {
 		return fmt.Errorf("unable to perform HTTP request: %w", err)
 	}

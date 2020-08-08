@@ -19,11 +19,10 @@ type session struct {
 }
 
 // SessionReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
+// You may return a non-nil error in order to prevent the payload from being sent at all.
+// This error is then forwarded to the InternalErrorCallback.
 // No further modifications will happen to the payload after this is run.
-// You may return a nil Context in order to prevent the payload from being sent at all.
-// This context will be attached to the http.Request used for the request to
-// Bugsnag, so you are also free to set deadlines etc as you see fit.
-type SessionReportSanitizer func(p *JSONSessionReport) context.Context
+type SessionReportSanitizer func(p *JSONSessionReport) error
 
 // StartSession attaches Bugsnag session data to a copy of the given
 // context.Context, and returns the new context.Context.
@@ -57,12 +56,9 @@ func (n *Notifier) flushSessions() {
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {
 	report := n.makeJSONSessionReport(cfg, sessions)
-	ctx := context.Background()
 	if sanitizer := n.cfg.SessionReportSanitizer; sanitizer != nil {
-		ctx = sanitizer(report)
-		if ctx == nil {
-			// A nil ctx indicates that we should not send the payload.
-			// Useful for testing etc.
+		if err := sanitizer(report); err != nil {
+			n.cfg.InternalErrorCallback(err)
 			return nil
 		}
 	}
@@ -81,7 +77,7 @@ func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) erro
 	req.Header.Add("Bugsnag-Payload-Version", "1.0")
 	req.Header.Add("Bugsnag-Sent-At", time.Now().UTC().Format(time.RFC3339))
 
-	res, err := http.DefaultClient.Do(req.WithContext(ctx))
+	res, err := http.DefaultClient.Do(req.WithContext(context.Background()))
 	if err != nil {
 		return fmt.Errorf("unable to deliver session: %w", err)
 	}
