@@ -14,6 +14,7 @@ PRs only improving the documentation are welcome without raising an issue first.
 
 Ensure that:
 
-1. Tests pass. (Enable GitHub actions on your fork of the repository in order to run CI)
-1. Linter has 0 issues against the root package. Issues against the examples are OK within reason.
+1. The tests pass. (Enable GitHub actions on your fork of the repository in order to run CI)
+1. The linter has 0 issues against the root package. Issues against the examples are OK within reason.
 1. You don't introduce any new dependencies (ask in an issue if you feel strongly that it's necessary).
+1. You follow the existing commit message convention.
