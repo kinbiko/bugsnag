@@ -2,6 +2,7 @@ package unit_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/kinbiko/bugsnag"
@@ -26,9 +27,9 @@ func TestBugsnagGetsNotified(t *testing.T) {
 
 				n, err = bugsnag.New(bugsnag.Configuration{
 					APIKey: "abcd1234abcd1234abcd1234abcd1234", AppVersion: "1.2.3", ReleaseStage: "test",
-					ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+					ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) error {
 						errMsg = r.Events[0].Exceptions[0].Message
-						return nil // returning nil prevents sending the payload to Bugsnag.
+						return errors.New("prevents sending the payload to Bugsnag")
 					},
 				})
 			)

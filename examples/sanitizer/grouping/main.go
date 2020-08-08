@@ -14,7 +14,7 @@ func main() {
 		APIKey:       os.Getenv("BUGSNAG_API_KEY"),
 		AppVersion:   "1.2.3",
 		ReleaseStage: "production",
-		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) error {
 			// manually specify which frames are 'in project'. Bugsnag groups
 			// by the top in-project stackframe by default.
 			for _, ev := range r.Events {
@@ -27,7 +27,7 @@ func main() {
 				}
 			}
 
-			return context.Background()
+			return nil
 		},
 	})
 	defer n.Close()

@@ -13,11 +13,11 @@ func main() {
 		APIKey:       os.Getenv("BUGSNAG_API_KEY"),
 		AppVersion:   "1.2.3",
 		ReleaseStage: "production",
-		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) error {
 			app := r.Events[0].App
 			app.ID = "kinbiko-some-app-worker"
 			app.Type = "worker" // Note: this field is indexed for 'free', i.e. no custom filter required.
-			return context.Background()
+			return nil
 		},
 	})
 	defer n.Close()

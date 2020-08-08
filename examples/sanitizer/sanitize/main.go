@@ -13,7 +13,7 @@ func main() {
 		APIKey:       os.Getenv("BUGSNAG_API_KEY"),
 		AppVersion:   "1.2.3",
 		ReleaseStage: "production",
-		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) error {
 			ev := r.Events[0]
 			rs := ev.App.ReleaseStage
 			if rs == "production" {
@@ -24,7 +24,7 @@ func main() {
 			if rs == "development" {
 				return nil
 			}
-			return context.Background()
+			return nil
 		},
 	})
 	defer n.Close()

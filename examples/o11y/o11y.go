@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"github.com/DataDog/datadog-go/statsd"
-	"github.com/kinbiko/bugsnag"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kinbiko/bugsnag"
 )
 
 // Olly is easier to write and talk about than O11y.
@@ -21,8 +22,10 @@ type Olly struct {
 	*logrus.Logger
 }
 
+// Config represents the configuration necessary to set up Olly.
 type Config struct{ BugsnagAPIKey, AppVersion, ReleaseStage, DatadogAgentAddr string }
 
+// NewO11y creates a new Olly type based on the given config.
 func NewO11y(cfg *Config) *Olly {
 	l := logrus.New()
 	return &Olly{
@@ -48,10 +51,10 @@ func makeBugsnagNotifier(l *logrus.Logger, apiKey, appVersion, releaseStage stri
 		APIKey:       apiKey,
 		AppVersion:   appVersion,
 		ReleaseStage: releaseStage,
-		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) context.Context {
+		ErrorReportSanitizer: func(ctx context.Context, r *bugsnag.JSONErrorReport) error {
 			// Log whenever we report an exception.
 			l.Error(r.Events[0].Exceptions[0].Message)
-			return context.Background()
+			return nil
 		},
 	})
 	if err != nil {

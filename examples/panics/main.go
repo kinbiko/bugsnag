@@ -10,7 +10,10 @@ import (
 
 func main() {
 	ctx := context.Background()
-	n, _ := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "1.2.3", ReleaseStage: "dev"})
+	n, err := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "1.2.3", ReleaseStage: "dev"})
+	if err != nil {
+		panic(err)
+	}
 	defer n.Close()
 
 	defer func() {
