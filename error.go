@@ -19,24 +19,27 @@ import (
 // severity for unhandled or panicking Errors is "error", and "warning"
 // otherwise.
 type Error struct {
-	Err       error
 	Unhandled bool
 	Panic     bool
 	Severity  severity
 
+	err        error
 	ctx        context.Context
 	stacktrace []*JSONStackframe
 	msg        string
 }
 
 func (e *Error) Error() string {
-	if e == nil {
-		return ""
+	if e.err == nil && e.msg == "" {
+		return "unknown error"
+	}
+	if e.err == nil {
+		return e.msg
 	}
 	if e.msg == "" {
-		return e.Err.Error()
+		return e.err.Error()
 	}
-	return e.msg
+	return fmt.Sprintf("%s: %s", e.msg, e.err)
 }
 
 // Unwrap is the conventional method for getting the underlying error of a
@@ -45,7 +48,7 @@ func (e *Error) Unwrap() error {
 	if e == nil {
 		return nil
 	}
-	return e.Err
+	return e.err
 }
 
 // Wrap attaches ctx data and wraps the given error with message, and
@@ -63,22 +66,17 @@ func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interfa
 // Any attached diagnostic data from this ctx will be preserved should you
 // return the returned error further up the stack.
 func Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
-	if err == nil {
+	if ctx == nil && err == nil && msgAndFmtArgs == nil {
 		return nil
 	}
-	berr := &Error{
-		Err:        err,
-		stacktrace: makeStacktrace(makeModulePath()),
-		ctx:        ctx,
-	}
-	if len(msgAndFmtArgs) >= 1 {
-		msg, ok := msgAndFmtArgs[0].(string)
-		if ok {
-			msg = fmt.Sprintf(msg, msgAndFmtArgs[1:]...)
-			berr.msg = fmt.Sprintf("%s: %s", msg, err.Error())
+	e := &Error{err: err, ctx: ctx, stacktrace: makeStacktrace(makeModulePath())}
+
+	if l := len(msgAndFmtArgs); l > 0 {
+		if msg, ok := msgAndFmtArgs[0].(string); ok {
+			e.msg = fmt.Sprintf(msg, msgAndFmtArgs[1:]...)
 		}
 	}
-	return berr
+	return e
 }
 
 func makeStacktrace(module string) []*JSONStackframe {
