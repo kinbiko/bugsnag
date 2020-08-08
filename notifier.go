@@ -40,14 +40,9 @@ type ErrorReportSanitizer func(ctx context.Context, p *JSONErrorReport) error
 // New constructs a new Notifier with the given configuration.
 // You should call Close before shutting down your app in order to ensure that
 // all sessions and reports have been sent.
-func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
-	if cfg.EndpointNotify == "" {
-		cfg.EndpointNotify = "https://notify.bugsnag.com"
-		cfg.EndpointSessions = "https://sessions.bugsnag.com"
-	}
-	if cfg.InternalErrorCallback == nil {
-		cfg.InternalErrorCallback = func(_ error) {} // Default to a NOOP.
-	}
+func New(config Configuration) (*Notifier, error) { //nolint:gocritic // We want to pass by value here as the configuration should be considered immutable
+	cfg := &config
+	cfg.populateDefaults()
 	cfg.runtimeConstants = makeRuntimeConstants()
 
 	if err := cfg.validate(); err != nil {
@@ -57,7 +52,7 @@ func New(cfg Configuration) (*Notifier, error) { //nolint:gocritic // We want to
 	const bufChanSize = 16
 
 	return &Notifier{
-		cfg: &cfg,
+		cfg: cfg,
 
 		sessions:               []*session{},
 		sessionPublishInterval: time.Minute,
@@ -90,16 +85,12 @@ func (n *Notifier) Close() {
 // Notify reports the given error to Bugsnag.
 // Extracts diagnostic data from the context and any *bugsnag.Error errors,
 // including wrapped errors.
-// Invokes the ErrorReportSanitizer before sending the error report.
+// Invokes the ErrorReportSanitizer, if set, before sending the error report.
 func (n *Notifier) Notify(ctx context.Context, err error) {
 	// Ideally we wouldn't need this guard, but it's the best way I can see to
 	// prevent this package from ever panicking.
 	defer n.guard("Notify")
 
-	// Important note: Be careful with contexts in this func.
-	// The ctx passed to the reportCh should not be derived from the ctx param
-	// of Notify, as it is likely that the Notify param will cancel before the
-	// HTTP request to Bugsnag can be sent.
 	if err == nil {
 		n.cfg.InternalErrorCallback(errors.New("error missing in call to (*bugsnag.Notifier).Notify. no error reported to Bugsnag"))
 		return
@@ -108,11 +99,9 @@ func (n *Notifier) Notify(ctx context.Context, err error) {
 
 	var report *JSONErrorReport
 	report, ctx = n.makeReport(ctx, err)
-	if sanitizer := n.cfg.ErrorReportSanitizer; sanitizer != nil {
-		if sErr := sanitizer(ctx, report); sErr != nil {
-			n.cfg.InternalErrorCallback(sErr)
-			return
-		}
+	if sErr := n.cfg.ErrorReportSanitizer(ctx, report); sErr != nil {
+		n.cfg.InternalErrorCallback(sErr)
+		return
 	}
 	n.reportCh <- report
 }

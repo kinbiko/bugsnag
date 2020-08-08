@@ -56,11 +56,8 @@ func (n *Notifier) flushSessions() {
 
 func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) error {
 	report := n.makeJSONSessionReport(cfg, sessions)
-	if sanitizer := n.cfg.SessionReportSanitizer; sanitizer != nil {
-		if err := sanitizer(report); err != nil {
-			n.cfg.InternalErrorCallback(err)
-			return nil
-		}
+	if err := n.cfg.SessionReportSanitizer(report); err != nil {
+		return err
 	}
 	payload, err := json.Marshal(report)
 	if err != nil {

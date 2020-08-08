@@ -40,23 +40,24 @@ func TestSessions(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	n := Notifier{
-		cfg: &Configuration{
-			EndpointSessions: ts.URL,
-			APIKey:           apiKey,
-			AppVersion:       "3.5.1",
-			ReleaseStage:     "staging",
-			runtimeConstants: runtimeConstants{
-				hostname:        "myHost",
-				osVersion:       "4.1.12",
-				goVersion:       "1.15",
-				osName:          "linux innit",
-				notifierVersion: "0.1.0",
-			},
-		},
-		sessionCh:              make(chan *session, 1),
-		sessionPublishInterval: time.Microsecond, // Just to make things go a bit faster,
+	n, err := New(Configuration{
+		EndpointSessions: ts.URL,
+		EndpointNotify:   ts.URL,
+		APIKey:           apiKey,
+		AppVersion:       "3.5.1",
+		ReleaseStage:     "staging",
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
+	n.cfg.runtimeConstants = runtimeConstants{
+		hostname:        "myHost",
+		osVersion:       "4.1.12",
+		goVersion:       "1.15",
+		osName:          "linux innit",
+		notifierVersion: "0.1.0",
+	}
+	n.sessionPublishInterval = time.Microsecond // Just to make things go a bit faster,
 	n.StartSession(context.Background())
 
 	jsonassert.New(t).Assertf(<-payloads, `{

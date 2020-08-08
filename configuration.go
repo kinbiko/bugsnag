@@ -1,6 +1,7 @@
 package bugsnag
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -69,6 +70,23 @@ func validURL(cand string) bool {
 	}
 	u, err := url.Parse(cand)
 	return err == nil && u.Scheme != "" && u.Host != ""
+}
+
+func (cfg *Configuration) populateDefaults() {
+	if cfg.EndpointNotify == "" {
+		cfg.EndpointNotify = "https://notify.bugsnag.com"
+		cfg.EndpointSessions = "https://sessions.bugsnag.com"
+	}
+	// Default to NOOP callbacks.
+	if cfg.ErrorReportSanitizer == nil {
+		cfg.ErrorReportSanitizer = func(_ context.Context, _ *JSONErrorReport) error { return nil }
+	}
+	if cfg.SessionReportSanitizer == nil {
+		cfg.SessionReportSanitizer = func(_ *JSONSessionReport) error { return nil }
+	}
+	if cfg.InternalErrorCallback == nil {
+		cfg.InternalErrorCallback = func(_ error) {}
+	}
 }
 
 func (cfg *Configuration) validate() error {
