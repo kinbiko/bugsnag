@@ -7,10 +7,17 @@
 [![License](https://img.shields.io/github/license/kinbiko/bugsnag.svg?style=flat)](https://github.com/kinbiko/mokku/blob/master/.github/LICENSE)
 
 Well-documented, maintainable, idiomatic, opinionated, and **unofficial** rewrite of the [Bugsnag Go notifier](https://github.com/bugsnag/bugsnag-go).
+See [this document](./.github/official-notifier-difference.md) for an overview of the differences between this package and the official notifier.
 
 ## Usage
 
-Set up your `*bugsnag.Notifier`, the type that exposes the main API of this package, based on a `bugsnag.Configuration`.
+Make sure you're importing this package, and not the official notifier:
+
+```go
+import "github.com/kinbiko/bugsnag"
+```
+
+Then set up your `*bugsnag.Notifier`, the type that exposes the main API of this package, based on a `bugsnag.Configuration`.
 
 ```go
 notifier, err := bugsnag.New(bugsnag.Configuration{
