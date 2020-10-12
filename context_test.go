@@ -57,6 +57,29 @@ func TestContextWithMethods(t *testing.T) {
 			t.Errorf("expected device.model to be '%s' but was '%s'", exp, deviceModel)
 		}
 	})
+
+	t.Run("nulls don't panic", func(t *testing.T) {
+		var ctx context.Context
+		for _, tc := range []struct {
+			name        string
+			panickyFunc func()
+		}{
+			{"WithBreadcrumb", func() { n.WithBreadcrumb(ctx, Breadcrumb{}) }},
+			{"WithBugsnagContext", func() { n.WithBugsnagContext(ctx, "whatever") }},
+			{"WithMetadata", func() { n.WithMetadata(ctx, "whatever", map[string]interface{}{}) }},
+			{"WithMetadatum", func() { n.WithMetadatum(ctx, "whatever", "foo", "bar") }},
+			{"WithUser", func() { n.WithUser(ctx, User{}) }},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				defer func() {
+					if r := recover(); r != nil {
+						t.Fatalf("got unexpected panic %s", r)
+					}
+				}()
+				tc.panickyFunc()
+			})
+		}
+	})
 }
 
 func TestCtxSerialization(t *testing.T) {

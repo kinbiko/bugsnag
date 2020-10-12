@@ -125,6 +125,9 @@ type Breadcrumb struct {
 // WithBreadcrumb attaches a breadcrumb to the top of the stack of breadcrumbs
 // stored in the given context.
 func (n *Notifier) WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
+	if ctx == nil {
+		return nil
+	}
 	// This function currently uses no features of the Notifier type, however
 	// we're attaching it to the Notifier to ensure that we can use
 	// Notifier-only functionalities in the future AND so that users need only
@@ -175,6 +178,9 @@ type User struct {
 // later be provided to the Notify method, and have this data show up in your
 // dashboard.
 func (n *Notifier) WithUser(ctx context.Context, user User) context.Context {
+	if ctx == nil {
+		return nil
+	}
 	// This function currently uses no features of the Notifier type, however
 	// we're attaching it to the Notifier to ensure that we can use
 	// Notifier-only functionalities in the future AND so that users need only
@@ -188,6 +194,9 @@ func (n *Notifier) WithUser(ctx context.Context, user User) context.Context {
 // show up in your Bugsnag dashboard. The naming here is unfortunate, but to be
 // fair, Bugsnag had this nomenclature before Go did...
 func (n *Notifier) WithBugsnagContext(ctx context.Context, bContext string) context.Context {
+	if ctx == nil {
+		return nil
+	}
 	// This function currently uses no features of the Notifier type, however
 	// we're attaching it to the Notifier to ensure that we can use
 	// Notifier-only functionalities in the future AND so that users need only
@@ -202,6 +211,9 @@ func (n *Notifier) WithBugsnagContext(ctx context.Context, bContext string) cont
 // existing/common tabs in the dashboard with the same name:
 //   "user", "app", "device", "request"
 func (n *Notifier) WithMetadatum(ctx context.Context, tab, key string, value interface{}) context.Context {
+	if ctx == nil {
+		return nil
+	}
 	m := initializeMetadataTab(ctx, tab)
 	m[tab][key] = value
 	return n.WithMetadata(ctx, tab, m[tab])
@@ -212,6 +224,9 @@ func (n *Notifier) WithMetadatum(ctx context.Context, tab, key string, value int
 // existing/common tabs in the dashboard with the same name:
 //   "user", "app", "device", "request"
 func (n *Notifier) WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
+	if ctx == nil {
+		return nil
+	}
 	// This function currently uses no features of the Notifier type, however
 	// we're attaching it to the Notifier to ensure that we can use
 	// Notifier-only functionalities in the future AND so that users need only
