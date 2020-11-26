@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/kinbiko/bugsnag)](https://goreportcard.com/report/github.com/kinbiko/bugsnag)
 [![Latest version](https://img.shields.io/github/tag/kinbiko/bugsnag.svg?label=latest%20version&style=flat)](https://github.com/kinbiko/bugsnag/releases)
 [![Go Documentation](http://img.shields.io/badge/godoc-documentation-blue.svg?style=flat)](https://pkg.go.dev/github.com/kinbiko/bugsnag?tab=doc)
-[![License](https://img.shields.io/github/license/kinbiko/bugsnag.svg?style=flat)](https://github.com/kinbiko/mokku/blob/master/.github/LICENSE)
+[![License](https://img.shields.io/github/license/kinbiko/bugsnag.svg?style=flat)](https://github.com/kinbiko/bugsnag/blob/master/.github/LICENSE)
 
 Well-documented, maintainable, idiomatic, opinionated, and **unofficial** rewrite of the [Bugsnag Go notifier](https://github.com/bugsnag/bugsnag-go).
 See [this document](./.github/official-notifier-difference.md) for an overview of the differences between this package and the official notifier.
