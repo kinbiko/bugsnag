@@ -25,7 +25,7 @@ func main() {
 		if recErr, ok := r.(error); ok {
 			err = recErr
 		}
-		bErr := n.Wrap(ctx, err)
+		bErr := bugsnag.Wrap(ctx, err)
 		bErr.Unhandled = true
 		bErr.Panic = true
 		n.Notify(ctx, bErr)

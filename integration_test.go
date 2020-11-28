@@ -64,7 +64,7 @@ func TestIntegration(t *testing.T) {
 	ctx = ntf.WithMetadata(ctx, "myTab", map[string]interface{}{"hello": 423})
 	ctx = ntf.WithMetadatum(ctx, "myTab", "goodbye", "cruel world")
 
-	err := ntf.Wrap(context.Background(), errors.New("oh ploppers"))
+	err := bugsnag.Wrap(context.Background(), errors.New("oh ploppers"))
 	err.Unhandled = true
 	err.Panic = true
 	ntf.Notify(ctx, err) // testing this synchronously in order to get more stack frames
