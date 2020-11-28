@@ -70,7 +70,7 @@ func withPanicReporting(n *bugsnag.Notifier, h http.Handler) http.HandlerFunc {
 				// error, and then wrap here. It would add more value, but in
 				// this case you're probably doing error handling in an
 				// unidiomatic manner anyway.
-				err := n.Wrap(ctx, fmt.Errorf("%v", rec), "panic in HTTP handler")
+				err := bugsnag.Wrap(ctx, fmt.Errorf("%v", rec), "panic in HTTP handler")
 				err.Unhandled = true
 				err.Panic = true
 				// Note: passing in context.Background() here so that we're

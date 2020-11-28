@@ -56,7 +56,9 @@ func (e *Error) Unwrap() error {
 // called.
 // Any attached diagnostic data from this ctx will be preserved should you
 // return the returned error further up the stack.
-func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
+// You may use bugsnag.Wrap directly in order to get a *bugsnag.Error type
+// returned without needing to do any type assertions.
+func (n *Notifier) Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) error {
 	return Wrap(ctx, err, msgAndFmtArgs...)
 }
 

@@ -70,7 +70,8 @@ If you would like to mark your error as unhandled, e.g. in the case of a panic, 
 
 ```go
 if r := recover(); r != nil {
-    err := notifier.Wrap(ctx, fmt.Errorf("unhandled panic when calling FooBar: %v", r))
+    // You can use notifier.Wrap as well, but this requires a type cast.
+    err := bugsnag.Wrap(ctx, fmt.Errorf("unhandled panic when calling FooBar: %v", r))
     err.Unhandled = true
     err.Panic = true
     notifier.Notify(ctx, err)
