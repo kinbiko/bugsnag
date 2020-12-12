@@ -23,10 +23,11 @@ type Notifier struct {
 	sessions               []*session
 	sessionPublishInterval time.Duration
 
-	reportCh   chan *JSONErrorReport
-	sessionCh  chan *session
-	shutdownCh chan struct{}
-	loopOnce   sync.Once
+	reportCh       chan *JSONErrorReport
+	sessionCh      chan *session
+	shutdownCh     chan struct{}
+	shutdownDoneCh chan struct{}
+	loopOnce       sync.Once
 }
 
 // ErrorReportSanitizer allows you to modify the payload being sent to Bugsnag just before it's being sent.
@@ -60,7 +61,8 @@ func New(config Configuration) (*Notifier, error) { //nolint:gocritic // We want
 		sessionCh: make(chan *session, bufChanSize),
 		reportCh:  make(chan *JSONErrorReport, bufChanSize),
 
-		shutdownCh: make(chan struct{}),
+		shutdownCh:     make(chan struct{}),
+		shutdownDoneCh: make(chan struct{}),
 	}, nil
 }
 
@@ -80,6 +82,8 @@ func (n *Notifier) Close() {
 	// but I'd much rather just drop the sessions/reports. I haven't bothered
 	// figuring out how to do this yet in a clean (race-condition-free) manner.
 	n.shutdownCh <- struct{}{}
+
+	<-n.shutdownDoneCh
 }
 
 // Notify reports the given error to Bugsnag.
@@ -136,6 +140,7 @@ func (n *Notifier) loop() {
 			n.flushSessions()
 		case <-n.shutdownCh:
 			n.shutdown(t)
+			close(n.shutdownDoneCh)
 			return
 		}
 	}
