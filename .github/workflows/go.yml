@@ -25,7 +25,12 @@ jobs:
       # Running tests with and without the race checker, as certain tests are
       # only run when the race checker is not enabled
     - name: Test
-      run: go test -v ./...
+      run: go test -v -coverprofile=profile.cov ./...
+
+    - name: Coverage
+      uses: shogo82148/actions-goveralls@v1
+      with:
+        path-to-profile: profile.cov
 
     - name: Test (race)
       run: go test -race -v ./...
