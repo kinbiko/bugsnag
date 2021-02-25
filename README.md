@@ -1,6 +1,7 @@
 # Bugsnag Go notifier (unofficial rewrite)
 
 [![Build Status](https://github.com/kinbiko/bugsnag/workflows/Go/badge.svg)](https://github.com/kinbiko/bugsnag/actions)
+[![Coverage Status](https://coveralls.io/repos/github/kinbiko/bugsnag/badge.svg?branch=master)](https://coveralls.io/github/kinbiko/bugsnag?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kinbiko/bugsnag)](https://goreportcard.com/report/github.com/kinbiko/bugsnag)
 [![Latest version](https://img.shields.io/github/tag/kinbiko/bugsnag.svg?label=latest%20version&style=flat)](https://github.com/kinbiko/bugsnag/releases)
 [![Go Documentation](http://img.shields.io/badge/godoc-documentation-blue.svg?style=flat)](https://pkg.go.dev/github.com/kinbiko/bugsnag?tab=doc)
