@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/kinbiko/jsonassert"
 )
@@ -115,4 +116,30 @@ func TestCtxSerialization(t *testing.T) {
 			"md":{"app": {"nick": "charmander", "types": ["fire"]}}
 		}`)
 	})
+}
+
+func TestUpdateFromCtx(t *testing.T) {
+	n, _ := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
+	ctx := context.Background()
+	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")
+	ctx = n.WithBreadcrumb(ctx, Breadcrumb{
+		Name:      "log event",
+		Type:      BCTypeManual,
+		Metadata:  map[string]interface{}{"msg": "ruh roh"},
+		Timestamp: time.Now(),
+	})
+	ctx = n.WithUser(ctx, User{ID: "123", Name: "River Tam", Email: "river@serenity.space"})
+	ctx = n.StartSession(ctx)
+	ctx = n.WithMetadatum(ctx, "app", "nick", "charmander")
+	ctx = n.WithMetadatum(ctx, "app", "types", []string{"fire"})
+
+	got := jsonCtxData{}
+	got.updateFromCtx(ctx, false)
+	b, _ := json.Marshal(getAttachedContextData(ctx))
+	jsonassert.New(t).Assertf(string(b), `{
+		"cx": "/pokemon?type=fire",
+		"bc":[{"md":{"msg": "ruh roh"}, "ts":"<<PRESENCE>>", "na":"log event", "ty":0}],
+		"us":{"email":"river@serenity.space", "id":"123", "name":"River Tam"},
+		"md":{"app": {"nick": "charmander", "types": ["fire"]}}
+	}`)
 }
