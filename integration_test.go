@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -40,86 +41,142 @@ func TestIntegration(t *testing.T) {
 		ReleaseStage:     "staging",
 	})
 
-	ctx := ntf.WithUser(context.Background(), bugsnag.User{
-		ID:    "1234",
-		Name:  "River Tam",
-		Email: "river@serenity.space",
-	})
-	ctx = ntf.StartSession(ctx)
-
-	ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
-		Name:     "something happened",
-		Type:     bugsnag.BCTypeProcess,
-		Metadata: map[string]interface{}{"md": "foo"},
-	})
-
-	ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
-		Name:     "something else happened",
-		Type:     bugsnag.BCTypeRequest,
-		Metadata: map[string]interface{}{"md": "bar"},
-	})
-
-	ctx = ntf.WithBugsnagContext(ctx, "User batch job")
-
-	ctx = ntf.WithMetadata(ctx, "myTab", map[string]interface{}{"hello": 423})
-	ctx = ntf.WithMetadatum(ctx, "myTab", "goodbye", "cruel world")
-
-	err := bugsnag.Wrap(context.Background(), errors.New("oh ploppers"))
-	err.Unhandled = true
-	err.Panic = true
-	ntf.Notify(ctx, err) // testing this synchronously in order to get more stack frames
-
-	var payload string
-	select {
-	case rep := <-reports:
-		payload = rep
-	case <-time.Tick(time.Second):
-		t.Fatal("waited 1 second for a report but none arrived")
-	}
-
 	hostname, _ := os.Hostname()
-	// The inProject flag won't work, as the debug package doesn't identify test pacakges as Main modules
-	jsonassert.New(t).Assertf(payload, `{
-		"apiKey": "abcd1234abcd1234abcd1234abcd1234",
-		"notifier": {
-			"name": "Alternative Go Notifier",
-			"version": "<<PRESENCE>>",
-			"url": "https://github.com/kinbiko/bugsnag"
-		},
-		"events": [
-			{
-				"payloadVersion": "5",
-				"severity": "error",
-				"severityReason": { "type": "unhandledPanic" },
-				"unhandled": true,
-				"context": "User batch job",
-				"app": { "version": "5.2.3", "releaseStage": "staging", "duration": "<<PRESENCE>>" },
-				"device": { "hostname": "%s", "osName": "%s", "osVersion": "<<PRESENCE>>", "memStats": "<<PRESENCE>>", "goroutineCount": "<<PRESENCE>>", "runtimeVersions": { "go": "%s" } },
-				"user": { "id": "1234", "name": "River Tam", "email": "river@serenity.space" },
-				"metaData": {"myTab": {"goodbye": "cruel world", "hello": 423}},
-				"session": { "id": "<<PRESENCE>>", "startedAt": "<<PRESENCE>>", "events": { "unhandled": 1 } },
-				"breadcrumbs": [
-					{ "metaData": {"md": "bar"}, "name": "something else happened", "timestamp": "<<PRESENCE>>", "type": "request" },
-					{ "metaData": {"md": "foo"}, "name": "something happened", "timestamp": "<<PRESENCE>>", "type": "process" }
-				],
-				"exceptions": [
+	for _, tc := range []struct {
+		name  string
+		setup func() (context.Context, error)
+		exp   string
+	}{
+		{
+			"Most things set",
+			func() (context.Context, error) {
+				ctx := ntf.WithUser(context.Background(), bugsnag.User{
+					ID:    "1234",
+					Name:  "River Tam",
+					Email: "river@serenity.space",
+				})
+				ctx = ntf.StartSession(ctx)
+
+				ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
+					Name:     "something happened",
+					Type:     bugsnag.BCTypeProcess,
+					Metadata: map[string]interface{}{"md": "foo"},
+				})
+
+				ctx = ntf.WithBreadcrumb(ctx, bugsnag.Breadcrumb{
+					Name:     "something else happened",
+					Type:     bugsnag.BCTypeRequest,
+					Metadata: map[string]interface{}{"md": "bar"},
+				})
+
+				ctx = ntf.WithBugsnagContext(ctx, "User batch job")
+
+				ctx = ntf.WithMetadata(ctx, "myTab", map[string]interface{}{"hello": 423})
+				ctx = ntf.WithMetadatum(ctx, "myTab", "goodbye", "cruel world")
+
+				err := bugsnag.Wrap(context.Background(), errors.New("oh ploppers"))
+				err.Severity = bugsnag.SeverityWarning
+				err.Unhandled = true
+				err.Panic = true
+
+				return ctx, err
+			},
+			fmt.Sprintf(`{
+				"apiKey": "abcd1234abcd1234abcd1234abcd1234",
+				"notifier": {
+					"name": "Alternative Go Notifier",
+					"version": "<<PRESENCE>>",
+					"url": "https://github.com/kinbiko/bugsnag"
+				},
+				"events": [
 					{
-						"errorClass": "*bugsnag.Error",
-						"message": "oh ploppers",
-						"stacktrace": [
-							{"file":"<<PRESENCE>>","inProject":false,"lineNumber":67,"method":"github.com/kinbiko/bugsnag_test.TestIntegration"},
-							{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
-							{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
+						"payloadVersion": "5",
+						"severity": "warning",
+						"severityReason": { "type": "userSpecifiedSeverity" },
+						"unhandled": true,
+						"context": "User batch job",
+						"app": { "version": "5.2.3", "releaseStage": "staging", "duration": "<<PRESENCE>>" },
+						"device": { "hostname": "%s", "osName": "%s", "osVersion": "<<PRESENCE>>", "memStats": "<<PRESENCE>>", "goroutineCount": "<<PRESENCE>>", "runtimeVersions": { "go": "%s" } },
+						"user": { "id": "1234", "name": "River Tam", "email": "river@serenity.space" },
+						"metaData": {"myTab": {"goodbye": "cruel world", "hello": 423}},
+						"session": { "id": "<<PRESENCE>>", "startedAt": "<<PRESENCE>>", "events": { "unhandled": 1 } },
+						"breadcrumbs": [
+							{ "metaData": {"md": "bar"}, "name": "something else happened", "timestamp": "<<PRESENCE>>", "type": "request" },
+							{ "metaData": {"md": "foo"}, "name": "something happened", "timestamp": "<<PRESENCE>>", "type": "process" }
+						],
+						"exceptions": [
+							{
+								"errorClass": "*bugsnag.Error",
+								"message": "oh ploppers",
+								"stacktrace": [
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
+								]
+							}, {
+								"errorClass": "*errors.errorString",
+								"message": "oh ploppers",
+								"stacktrace": null
+							}
 						]
-					}, {
-						"errorClass": "*errors.errorString",
-						"message": "oh ploppers",
-						"stacktrace": null
 					}
 				]
+			}`, hostname, runtime.GOOS, runtime.Version()),
+		},
+		{
+			"automatically setting severity reason and context",
+			func() (context.Context, error) {
+				return context.Background(), bugsnag.Wrap(context.Background(), errors.New("oh ploppers"))
+			},
+			fmt.Sprintf(`{
+				"apiKey": "abcd1234abcd1234abcd1234abcd1234",
+				"notifier": "<<PRESENCE>>",
+				"events": [
+					{
+						"payloadVersion": "5",
+						"severity": "warning",
+						"severityReason": { "type": "handledException" },
+						"unhandled": false,
+						"context": "oh ploppers",
+						"app": { "version": "5.2.3", "releaseStage": "staging", "duration": "<<PRESENCE>>" },
+						"device": { "hostname": "%s", "osName": "%s", "osVersion": "<<PRESENCE>>", "memStats": "<<PRESENCE>>", "goroutineCount": "<<PRESENCE>>", "runtimeVersions": { "go": "%s" } },
+						"exceptions": [
+							{
+								"errorClass": "*bugsnag.Error",
+								"message": "oh ploppers",
+								"stacktrace": [
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"},
+									{"file":"<<PRESENCE>>","inProject":false,"lineNumber":"<<PRESENCE>>","method":"<<PRESENCE>>"}
+								]
+							}, {
+								"errorClass": "*errors.errorString",
+								"message": "oh ploppers",
+								"stacktrace": null
+							}
+						]
+					}
+				]
+			}`, hostname, runtime.GOOS, runtime.Version()),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, err := tc.setup()
+			ntf.Notify(ctx, err) // testing this synchronously in order to get more stack frames
+
+			var payload string
+			select {
+			case rep := <-reports:
+				payload = rep
+			case <-time.Tick(time.Second):
+				t.Fatal("waited 1 second for a report but none arrived")
 			}
-		]
-	}`, hostname, runtime.GOOS, runtime.Version())
+
+			jsonassert.New(t).Assertf(payload, tc.exp)
+		})
+	}
 }
 
 func TestReportSerialization(t *testing.T) {
