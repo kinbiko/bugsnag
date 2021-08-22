@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"reflect"
 	"runtime"
+	"runtime/metrics"
 	"strings"
 	"sync"
 	"time"
@@ -304,40 +305,46 @@ func makeJSONApp(cfg *Configuration) *JSONApp {
 }
 
 func (n *Notifier) makeJSONDevice() *JSONDevice {
-	ms, err := memStats()
-	if err != nil {
-		n.cfg.InternalErrorCallback(fmt.Errorf("unable to gather MemStats: %w", err))
-	}
 	return &JSONDevice{
 		Hostname:        n.cfg.hostname,
 		OSName:          n.cfg.osName,
 		OSVersion:       n.cfg.osVersion,
-		MemStats:        ms,
+		RuntimeMetrics:  runtimeMetrics(),
 		GoroutineCount:  runtime.NumGoroutine(),
 		RuntimeVersions: map[string]string{"go": n.cfg.goVersion},
 	}
 }
 
-func memStats() (map[string]interface{}, error) {
-	m := &runtime.MemStats{}
-	runtime.ReadMemStats(m)
-	b, err := json.Marshal(m)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal memstats: %w", err)
+func runtimeMetrics() map[string]interface{} {
+	descs := metrics.All()
+	samples := make([]metrics.Sample, len(descs))
+	for i := range samples {
+		samples[i].Name = descs[i].Name
 	}
 
-	memStats := map[string]interface{}{}
-	err = json.Unmarshal(b, &memStats)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal memstats into a map: %w", err)
+	metrics.Read(samples)
+
+	rm := map[string]interface{}{}
+	for _, sample := range samples {
+		switch sample.Value.Kind() {
+		case metrics.KindUint64:
+			rm[sample.Name] = sample.Value.Uint64()
+		case metrics.KindFloat64:
+			rm[sample.Name] = sample.Value.Float64()
+		case metrics.KindBad:
+			// This should never happen because all metrics are supported by construction.
+		case metrics.KindFloat64Histogram:
+			// Ignore histograms as they contain too much data and we're likely
+			// to hit the 1MB limit, and woudln't want to try and do any
+			// analysis on it at runtime for performance reasons.
+		default:
+			// This block may get invoked if there's a new metric kind being
+			// added in future Go versions. Worst case scenario, we miss out
+			// on a new metric.
+		}
 	}
 
-	// These are just to long to add and makes is more likely that we'd hit the
-	// 1MB limit
-	delete(memStats, "PauseNs")
-	delete(memStats, "PauseEnd")
-	delete(memStats, "BySize")
-	return memStats, nil
+	return rm
 }
 
 // osVersion is only available on unix-like systems as it depends on the

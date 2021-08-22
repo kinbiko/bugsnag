@@ -63,7 +63,7 @@ func TestSessions(t *testing.T) {
 	jsonassert.New(t).Assertf(<-payloads, `{
 		"notifier":      { "name": "Alternative Go Notifier", "url": "https://github.com/kinbiko/bugsnag", "version": "0.1.0" },
 		"app":           { "releaseStage": "staging", "version": "3.5.1", "duration": "<<PRESENCE>>" },
-		"device":        { "osName": "linux innit", "osVersion": "4.1.12", "hostname": "myHost", "runtimeVersions": { "go": "1.15"}, "goroutineCount": "<<PRESENCE>>", "memStats": "<<PRESENCE>>" },
+		"device":        { "osName": "linux innit", "osVersion": "4.1.12", "hostname": "myHost", "runtimeVersions": { "go": "1.15"}, "goroutineCount": "<<PRESENCE>>", "runtimeMetrics": "<<PRESENCE>>" },
 		"sessionCounts": [{ "startedAt": "<<PRESENCE>>", "sessionsStarted": 1 }]
 	}`)
 }
