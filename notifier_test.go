@@ -52,7 +52,7 @@ func TestDevice(t *testing.T) {
 	}
 
 	jsonassert.New(t).Assertf(string(payload), `{
-			"memStats": "<<PRESENCE>>",
+			"runtimeMetrics": "<<PRESENCE>>",
 			"hostname": "myHost",
 			"osName": "linux innit",
 			"osVersion": "4.1.12",

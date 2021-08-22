@@ -41,10 +41,10 @@ type JSONApp struct {
 // should be included in the metaData object in a device object.
 type JSONDevice struct {
 	// Rather than faff about with trying to find something that matches the
-	// API exactly, just fit all easily fetchable memory data and abuse
+	// API exactly, just fit all easily fetchable metric data and abuse
 	// the fact you can just add to the device struct whatever you want.
 	// Obviously, this may well stop working in the future.
-	MemStats map[string]interface{} `json:"memStats,omitempty"`
+	RuntimeMetrics map[string]interface{} `json:"runtimeMetrics,omitempty"`
 
 	// GoroutineCount is the number of goroutines running in the app at the
 	// time that Notify was called.
