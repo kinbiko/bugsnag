@@ -335,7 +335,7 @@ func runtimeMetrics() map[string]interface{} {
 			// This should never happen because all metrics are supported by construction.
 		case metrics.KindFloat64Histogram:
 			// Ignore histograms as they contain too much data and we're likely
-			// to hit the 1MB limit, and woudln't want to try and do any
+			// to hit the 1MB limit, and wouldn't want to try and do any
 			// analysis on it at runtime for performance reasons.
 		default:
 			// This block may get invoked if there's a new metric kind being
