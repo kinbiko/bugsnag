@@ -39,7 +39,7 @@ Call `notifier.Notify()` to notify Bugsnag about an error in your application.
 
 ```go
 if err != nil {
-    notifier.Notify(ctx, err)
+	notifier.Notify(ctx, err)
 }
 ```
 
@@ -59,7 +59,7 @@ You can then safely call `notifier.Notify()` at a single location if you so wish
 
 ```go
 if err != nil {
-    return notifier.Wrap(ctx, err, "unable to foo the bar")
+	return notifier.Wrap(ctx, err, "unable to foo the bar")
 }
 ```
 
@@ -71,11 +71,11 @@ If you would like to mark your error as unhandled, e.g. in the case of a panic, 
 
 ```go
 if r := recover(); r != nil {
-    // You can use notifier.Wrap as well, but this requires a type cast.
-    err := bugsnag.Wrap(ctx, fmt.Errorf("unhandled panic when calling FooBar: %v", r))
-    err.Unhandled = true
-    err.Panic = true
-    notifier.Notify(ctx, err)
+	// You can use notifier.Wrap as well, but this requires a type cast.
+	err := bugsnag.Wrap(ctx, fmt.Errorf("unhandled panic when calling FooBar: %v", r))
+	err.Unhandled = true
+	err.Panic = true
+	notifier.Notify(ctx, err)
 }
 ```
 
