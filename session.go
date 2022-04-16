@@ -36,7 +36,7 @@ func (n *Notifier) StartSession(ctx context.Context) context.Context {
 	session := &session{
 		StartedAt:   time.Now(),
 		ID:          uuidv4(),
-		EventCounts: &JSONSessionEvents{},
+		EventCounts: &JSONSessionEvents{Handled: 0, Unhandled: 0},
 	}
 	n.sessionCh <- session
 	return context.WithValue(ctx, sessionKey, session)
@@ -78,7 +78,10 @@ func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) erro
 	if err != nil {
 		return fmt.Errorf("unable to deliver session: %w", err)
 	}
-	return res.Body.Close()
+	if err := res.Body.Close(); err != nil {
+		return fmt.Errorf("unable to close the response body: %w", err)
+	}
+	return nil
 }
 
 func incrementEventCountAndGetSession(ctx context.Context, unhandled bool) *session {
@@ -132,22 +135,23 @@ func (n *Notifier) makeJSONSessionReport(cfg *Configuration, sessions []*session
 // uuidv4 returns a randomly generated UUID v4.
 // Returns a canonical RFC-4122 string representation of the UUID:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
+// nolint:gomnd // magic numbers from RFC algorithm
 func uuidv4() string {
-	var u [16]byte
-	_, _ = io.ReadFull(rand.Reader, u[:])
-	u[6] = (u[6] & 0x0f) | (0x04 << 4)  // Version 4
-	u[8] = u[8]&(0xff>>2) | (0x02 << 6) // Variation RFC-4122
+	var uuid [16]byte
+	_, _ = io.ReadFull(rand.Reader, uuid[:])
+	uuid[6] = (uuid[6] & 0x0f) | (0x04 << 4)  // Version 4
+	uuid[8] = uuid[8]&(0xff>>2) | (0x02 << 6) // Variation RFC-4122
 
 	buf := make([]byte, 36)
-	hex.Encode(buf[0:8], u[0:4])
+	hex.Encode(buf[0:8], uuid[0:4])
 	buf[8] = '-'
-	hex.Encode(buf[9:13], u[4:6])
+	hex.Encode(buf[9:13], uuid[4:6])
 	buf[13] = '-'
-	hex.Encode(buf[14:18], u[6:8])
+	hex.Encode(buf[14:18], uuid[6:8])
 	buf[18] = '-'
-	hex.Encode(buf[19:23], u[8:10])
+	hex.Encode(buf[19:23], uuid[8:10])
 	buf[23] = '-'
-	hex.Encode(buf[24:], u[10:])
+	hex.Encode(buf[24:], uuid[10:])
 
 	return string(buf)
 }

@@ -42,7 +42,7 @@ func (n *Notifier) Deserialize(ctx context.Context, data []byte) context.Context
 		n.cfg.InternalErrorCallback(err)
 		return ctx
 	}
-	cd := &ctxData{}
+	cd := &ctxData{} // nolint:exhaustivestruct // we're about to fill the data dynamically
 	if err := json.Unmarshal(jsonData, cd); err != nil {
 		n.cfg.InternalErrorCallback(err)
 		return ctx
@@ -124,7 +124,7 @@ type Breadcrumb struct {
 
 // WithBreadcrumb attaches a breadcrumb to the top of the stack of breadcrumbs
 // stored in the given context.
-func (n *Notifier) WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Context {
+func (n *Notifier) WithBreadcrumb(ctx context.Context, breadcrumb Breadcrumb) context.Context {
 	if ctx == nil {
 		return nil
 	}
@@ -132,11 +132,11 @@ func (n *Notifier) WithBreadcrumb(ctx context.Context, b Breadcrumb) context.Con
 	// we're attaching it to the Notifier to ensure that we can use
 	// Notifier-only functionalities in the future AND so that users need only
 	// import the bugsnag package in a single location in their app.
-	if b.Timestamp.IsZero() {
-		b.Timestamp = time.Now().UTC()
+	if breadcrumb.Timestamp.IsZero() {
+		breadcrumb.Timestamp = time.Now().UTC()
 	}
 	cd := getAttachedContextData(ctx)
-	cd.Breadcrumbs = append(cd.Breadcrumbs, b)
+	cd.Breadcrumbs = append(cd.Breadcrumbs, breadcrumb)
 	return context.WithValue(ctx, ctxDataKey, cd)
 }
 
@@ -249,15 +249,15 @@ func (n *Notifier) Metadata(ctx context.Context) map[string]map[string]interface
 }
 
 func initializeMetadataTab(ctx context.Context, tab string) map[string]map[string]interface{} {
-	m := getAttachedContextData(ctx).Metadata
-	if m == nil {
-		m = map[string]map[string]interface{}{}
+	metadata := getAttachedContextData(ctx).Metadata
+	if metadata == nil {
+		metadata = map[string]map[string]interface{}{}
 	}
 
-	if m[tab] == nil {
-		m[tab] = map[string]interface{}{}
+	if metadata[tab] == nil {
+		metadata[tab] = map[string]interface{}{}
 	}
-	return m
+	return metadata
 }
 
 type jsonCtxData struct {
@@ -277,17 +277,17 @@ func extractAugmentedContextData(ctx context.Context, err error, unhandled bool)
 		metadata:    getAttachedContextData(ctx).Metadata,
 	}
 	lowestCtx := ctx
-	var e error = err
+	lowestErr := err
 	for {
-		if berr, ok := e.(*Error); ok {
+		if berr, ok := lowestErr.(*Error); ok {
 			ctx = berr.ctx
 			if ctx != nil {
 				data.updateFromCtx(ctx, unhandled)
 				lowestCtx = ctx
 			}
 		}
-		e = errors.Unwrap(e)
-		if e == nil {
+		lowestErr = errors.Unwrap(lowestErr)
+		if lowestErr == nil {
 			break
 		}
 	}
@@ -331,7 +331,7 @@ func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
 
 func getAttachedContextData(ctx context.Context) *ctxData {
 	if val := ctx.Value(ctxDataKey); val != nil {
-		return val.(*ctxData)
+		return val.(*ctxData) // nolint:forcetypeassert // This is safe. We own the key => we own the type
 	}
-	return &ctxData{}
+	return &ctxData{} // nolint:exhaustivestruct // this saves lots of nil checks elsewhere
 }

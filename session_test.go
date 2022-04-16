@@ -2,7 +2,7 @@ package bugsnag
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,12 +12,14 @@ import (
 )
 
 func TestSessions(t *testing.T) {
+	t.Parallel()
 	var (
 		apiKey   = "abcd1234abcd1234abcd1234abcd1234"
 		payloads = make(chan string, 1)
 	)
 
 	checkHeaders := func(t *testing.T, headers http.Header) {
+		t.Helper()
 		for _, tc := range []struct{ name, expected string }{
 			{name: "Bugsnag-Payload-Version", expected: "1.0"},
 			{name: "Content-Type", expected: "application/json"},
@@ -34,7 +36,7 @@ func TestSessions(t *testing.T) {
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		checkHeaders(t, r.Header)
-		body, _ := ioutil.ReadAll(r.Body)
+		body, _ := io.ReadAll(r.Body)
 		payloads <- string(body)
 		w.WriteHeader(http.StatusAccepted)
 	}))
@@ -69,6 +71,7 @@ func TestSessions(t *testing.T) {
 }
 
 func TestSessionAndContext(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		expUnhandledCount, expHandledCount int
 		name                               string
@@ -77,7 +80,9 @@ func TestSessionAndContext(t *testing.T) {
 		{expUnhandledCount: 1, expHandledCount: 0, name: "unhandled", unhandled: true},
 		{expUnhandledCount: 0, expHandledCount: 1, name: "handled", unhandled: false},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 			if err != nil {
 				t.Fatal(err)

@@ -10,11 +10,13 @@ import (
 )
 
 func TestContextWithMethods(t *testing.T) {
+	t.Parallel()
 	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Run("WithBreadcrumb", func(t *testing.T) {
+		t.Parallel()
 		asJSON := func(s interface{}) string {
 			b, err := json.Marshal(s)
 			if err != nil {
@@ -41,6 +43,7 @@ func TestContextWithMethods(t *testing.T) {
 	})
 
 	t.Run("WithUser", func(t *testing.T) {
+		t.Parallel()
 		exp := User{ID: "id", Name: "name", Email: "email"}
 		if got := getAttachedContextData(n.WithUser(context.Background(), exp)).User; *got != exp {
 			t.Errorf("expected that when I add '%+v' to the context what I get back ('%+v') should be equal", exp, got)
@@ -48,6 +51,7 @@ func TestContextWithMethods(t *testing.T) {
 	})
 
 	t.Run("WithMetadata and WithMetadatum", func(t *testing.T) {
+		t.Parallel()
 		ctx := n.WithMetadatum(context.Background(), "app", "id", "15011-2")
 		ctx = n.WithMetadata(ctx, "device", map[string]interface{}{"model": "15023-2"})
 		md := n.Metadata(ctx)
@@ -60,6 +64,7 @@ func TestContextWithMethods(t *testing.T) {
 	})
 
 	t.Run("nulls don't panic", func(t *testing.T) {
+		t.Parallel()
 		var ctx context.Context
 		for _, tc := range []struct {
 			name        string
@@ -71,7 +76,9 @@ func TestContextWithMethods(t *testing.T) {
 			{"WithMetadatum", func() { n.WithMetadatum(ctx, "whatever", "foo", "bar") }},
 			{"WithUser", func() { n.WithUser(ctx, User{}) }},
 		} {
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
 				defer func() {
 					if r := recover(); r != nil {
 						t.Fatalf("got unexpected panic %s", r)
@@ -84,6 +91,7 @@ func TestContextWithMethods(t *testing.T) {
 }
 
 func TestCtxSerialization(t *testing.T) {
+	t.Parallel()
 	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
 
 	ctx := context.Background()
@@ -94,6 +102,7 @@ func TestCtxSerialization(t *testing.T) {
 	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")
 
 	t.Run("json serialization", func(t *testing.T) {
+		t.Parallel()
 		b, _ := json.Marshal(getAttachedContextData(ctx))
 		jsonassert.New(t).Assertf(string(b), `{
 			"cx": "/pokemon?type=fire",
@@ -104,6 +113,7 @@ func TestCtxSerialization(t *testing.T) {
 	})
 
 	t.Run("serialize + deserialize yields the same data", func(t *testing.T) {
+		t.Parallel()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,6 +129,7 @@ func TestCtxSerialization(t *testing.T) {
 }
 
 func TestUpdateFromCtx(t *testing.T) {
+	t.Parallel()
 	n, _ := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
 	ctx := context.Background()
 	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")

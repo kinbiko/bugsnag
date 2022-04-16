@@ -3,6 +3,7 @@ package bugsnag
 import "testing"
 
 func TestConfigurationValidation(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name   string
 		expMsg string
@@ -95,7 +96,9 @@ func TestConfigurationValidation(t *testing.T) {
 			expMsg: `app version must be valid semver`,
 		},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := tc.cfg.validate()
 			if err == nil {
 				if tc.expMsg != "" {

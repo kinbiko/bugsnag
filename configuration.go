@@ -14,7 +14,6 @@ import (
 // Configuration represents all of the possible configurations for the notifier.
 // Only APIKey, AppVersion, and ReleaseStage is required.
 type Configuration struct {
-
 	// Required configuration options:
 
 	// The 32 hex-character API Key that identifies your Bugsnag project.
@@ -90,7 +89,7 @@ func (cfg *Configuration) populateDefaults() {
 }
 
 func (cfg *Configuration) validate() error {
-	if r := regexp.MustCompile("^[0-9a-f]{32}$"); !r.Match([]byte(cfg.APIKey)) {
+	if r := regexp.MustCompile("^[0-9a-f]{32}$"); !r.MatchString(cfg.APIKey) {
 		return fmt.Errorf(`API key must be 32 hex characters, but got "%s"`, cfg.APIKey)
 	}
 
@@ -104,7 +103,7 @@ func (cfg *Configuration) validate() error {
 		return fmt.Errorf("release stage must be set")
 	}
 	semverRegex := `v?([0-9]+)(\.[0-9]+)?(\.[0-9]+)?(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?`
-	if r := regexp.MustCompile(semverRegex); !r.Match([]byte(cfg.AppVersion)) {
+	if r := regexp.MustCompile(semverRegex); !r.MatchString(cfg.AppVersion) {
 		return fmt.Errorf("app version must be valid semver")
 	}
 	return nil
@@ -122,29 +121,33 @@ type runtimeConstants struct {
 }
 
 func makeRuntimeConstants() runtimeConstants {
-	rc := runtimeConstants{
-		osVersion:    osVersion(),
-		goVersion:    runtime.Version(),
-		osName:       runtime.GOOS,
-		appStartTime: time.Now(),
-	}
-	rc.hostname, _ = os.Hostname()
+	var (
+		appID = ""
+		// This next line is for developer sanity:
+		// Bugsnag will drop payloads that don't include the notifier payload.
+		// However, it is not set when doing development on the notifier locally --
+		// only when it's imported in another application.
+		// Therefore, set a constant if it is missing from the calculation above.
+		notifierVersion = "SNAPSHOT"
+	)
+
 	if bi, ok := debug.ReadBuildInfo(); ok {
-		rc.appID = bi.Path
+		appID = bi.Path
 		for _, dep := range bi.Deps {
 			if dep.Path == "github.com/kinbiko/bugsnag" {
-				rc.notifierVersion = dep.Version
+				notifierVersion = dep.Version
 				break
 			}
 		}
 	}
-	// This next line is for developer sanity:
-	// Bugsnag will drop payloads that don't include the notifier payload.
-	// However, it is not set when doing development on the notifier locally --
-	// only when it's imported in another application.
-	// Therefore, set a constant if it is missing from the calculation above.
-	if rc.notifierVersion == "" {
-		rc.notifierVersion = "SNAPSHOT"
+
+	return runtimeConstants{
+		osVersion:       osVersion(),
+		goVersion:       runtime.Version(),
+		osName:          runtime.GOOS,
+		appStartTime:    time.Now(),
+		hostname:        func() string { h, _ := os.Hostname(); return h }(),
+		notifierVersion: notifierVersion,
+		appID:           appID,
 	}
-	return rc
 }

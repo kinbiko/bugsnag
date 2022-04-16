@@ -79,8 +79,7 @@ linters-settings:
     # exclude: /path/to/file.txt
 
   funlen:
-    # TODO: not sure this does anything
-    lines: 30
+    lines: 35
     statements: 20
 
   govet:
@@ -91,10 +90,10 @@ linters-settings:
     # enable:
     #   - atomicalign
     enable-all: true
-    # disable:
-    #   - shadow
+    disable:
+      - fieldalignment
     # disable-all: false
-  golint:
+  revive:
     # minimal confidence for issues, default is 0.8
     min-confidence: 0.8
   gofmt:
@@ -115,9 +114,6 @@ linters-settings:
     # where nested if/for is weighted more, and only one point regardless of
     # cases in a switch.
     min-complexity: 11
-  maligned:
-    # print struct with more effective memory layout or not, false by default
-    suggest-new: true
   dupl:
     # tokens count to trigger issue, 150 by default
     threshold: 100
@@ -228,6 +224,26 @@ linters-settings:
 linters:
   disable:
     - wsl
+    - godot
+    - nlreturn
+
+      # These are apparently disabled but still yell at you if you don't disable them
+    - golint
+    - scopelint
+    - maligned
+    - interfacer
+
+      # This won't shut up about using errors.As which doesn't make sense in
+      # general in this package.
+    - errorlint
+
+      # This conflicts with goimports
+    - gci
+
+      # This package processes stuff in the background but still accepts a ctx param
+      # for key methods. The linter is confused about this since most such packages
+      # are "direct" clients (as opposed to background reporting)
+    - contextcheck
   presets:
     - bugs
     - complexity
@@ -251,16 +267,20 @@ issues:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
-        - gocyclo
-        - gocognit
-        - errcheck
         - dupl
-        - scopelint
+        - containedctx # We want this because context is central for this package and useful in test case structs
+        - errcheck
+        - exhaustivestruct
+        - funlen
+        - gocognit
+        - gocyclo
         - gomnd
         - lll
         - stylecheck
-        - funlen
         - testpackage
+        - cyclop
+        - errchkjson
+        - varnamelen
     - path: \.go
       linters:
         - goerr113
