@@ -36,7 +36,7 @@ func (s *server) bugsnagMiddleware(ctx context.Context, req interface{}, info *g
 			if recErr, ok := r.(error); ok {
 				err = recErr
 			}
-			bErr := s.Wrap(ctx, err)
+			bErr := bugsnag.Wrap(ctx, err)
 			bErr.Unhandled = true
 			bErr.Panic = true
 			// Be careful not to pass in the ctx from the gRPC call to Notify,
