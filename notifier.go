@@ -64,6 +64,8 @@ func New(config Configuration) (*Notifier, error) { //nolint:gocritic // We want
 
 		shutdownCh:     make(chan struct{}),
 		shutdownDoneCh: make(chan struct{}),
+
+		loopOnce: sync.Once{},
 	}, nil
 }
 
@@ -128,7 +130,7 @@ const (
 // come in. This loop ensures that a spike in errors doesn't consume the upload
 // bandwidth for highly concurrent applications.
 func (n *Notifier) loop() {
-	t := time.NewTicker(n.sessionPublishInterval)
+	ticker := time.NewTicker(n.sessionPublishInterval)
 	for {
 		select {
 		case r := <-n.reportCh:
@@ -137,17 +139,17 @@ func (n *Notifier) loop() {
 			}
 		case s := <-n.sessionCh:
 			n.sessions = append(n.sessions, s)
-		case <-t.C:
+		case <-ticker.C:
 			n.flushSessions()
 		case <-n.shutdownCh:
-			n.shutdown(t)
+			n.shutdown(ticker)
 			close(n.shutdownDoneCh)
 			return
 		}
 	}
 }
 
-func (n *Notifier) shutdown(t *time.Ticker) {
+func (n *Notifier) shutdown(ticker *time.Ticker) {
 	close(n.shutdownCh)
 
 	close(n.reportCh)
@@ -162,7 +164,7 @@ func (n *Notifier) shutdown(t *time.Ticker) {
 		n.sessions = append(n.sessions, s)
 	}
 
-	t.Stop()
+	ticker.Stop()
 	n.flushSessions()
 }
 
@@ -172,24 +174,24 @@ type causer interface {
 
 func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport, context.Context) {
 	unhandled := makeUnhandled(err)
-	cd, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
+	contextData, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
 	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
 		Notifier: makeNotifier(n.cfg),
 		Events: []*JSONEvent{
 			{
 				PayloadVersion: "5",
-				Context:        cd.bContext,
+				Context:        contextData.bContext,
 				Unhandled:      unhandled,
 				Severity:       makeSeverity(err),
 				SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
 				Exceptions:     makeExceptions(err),
-				Breadcrumbs:    cd.breadcrumbs,
-				User:           cd.user,
+				Breadcrumbs:    contextData.breadcrumbs,
+				User:           contextData.user,
 				App:            makeJSONApp(n.cfg),
 				Device:         n.makeJSONDevice(),
-				Session:        cd.session,
-				Metadata:       cd.metadata,
+				Session:        contextData.session,
+				Metadata:       contextData.metadata,
 			},
 		},
 	}, augmentedCtx
@@ -216,7 +218,10 @@ func (n *Notifier) sendErrorReport(r *JSONErrorReport) error {
 	if err != nil {
 		return fmt.Errorf("unable to perform HTTP request: %w", err)
 	}
-	return res.Body.Close()
+	if err := res.Body.Close(); err != nil {
+		return fmt.Errorf("unable to close the response body: %w", err)
+	}
+	return nil
 }
 
 func makeUnhandled(err error) bool {
@@ -249,14 +254,14 @@ func severityReasonType(err error) string {
 		prefix = "handled"
 		suffix = "Exception"
 	)
-	if e := extractLowestBugsnagError(err); e != nil {
-		if e.Severity != severityUndetermined {
+	if lowestBugsnagErr := extractLowestBugsnagError(err); lowestBugsnagErr != nil {
+		if lowestBugsnagErr.Severity != severityUndetermined {
 			return "userSpecifiedSeverity"
 		}
-		if e.Unhandled {
+		if lowestBugsnagErr.Unhandled {
 			prefix = "unhandled"
 		}
-		if e.Panic {
+		if lowestBugsnagErr.Panic {
 			suffix = "Panic"
 		}
 	}
@@ -285,21 +290,27 @@ func makeExceptions(err error) []*JSONException {
 	}
 
 	eps := make([]*JSONException, len(errs))
-	for i, err := range errs {
-		ep := &JSONException{ErrorClass: reflect.TypeOf(err).String(), Message: err.Error()}
+	for i, err := range errs { // nolint:varnamelen // indexes are conventionally i
+		var stacktrace []*JSONStackframe
 		if berr, ok := err.(*Error); ok {
-			ep.Stacktrace = berr.stacktrace
+			stacktrace = berr.stacktrace
 		}
-		eps[len(errs)-i-1] = ep // reverse the order to match the API
+		// reverse the order to match the API
+		eps[len(errs)-i-1] = &JSONException{
+			ErrorClass: reflect.TypeOf(err).String(),
+			Message:    err.Error(),
+			Stacktrace: stacktrace,
+		}
 	}
 	return eps
 }
 
 func makeJSONApp(cfg *Configuration) *JSONApp {
 	return &JSONApp{
-		Version:      cfg.AppVersion,
 		ID:           cfg.runtimeConstants.appID,
+		Version:      cfg.AppVersion,
 		ReleaseStage: cfg.ReleaseStage,
+		Type:         "",
 		Duration:     time.Since(cfg.appStartTime).Milliseconds(),
 	}
 }
@@ -324,13 +335,13 @@ func runtimeMetrics() map[string]interface{} {
 
 	metrics.Read(samples)
 
-	rm := map[string]interface{}{}
+	runtimeMetrics := map[string]interface{}{}
 	for _, sample := range samples {
 		switch sample.Value.Kind() {
 		case metrics.KindUint64:
-			rm[sample.Name] = sample.Value.Uint64()
+			runtimeMetrics[sample.Name] = sample.Value.Uint64()
 		case metrics.KindFloat64:
-			rm[sample.Name] = sample.Value.Float64()
+			runtimeMetrics[sample.Name] = sample.Value.Float64()
 		case metrics.KindBad:
 			// This should never happen because all metrics are supported by construction.
 		case metrics.KindFloat64Histogram:
@@ -344,7 +355,7 @@ func runtimeMetrics() map[string]interface{} {
 		}
 	}
 
-	return rm
+	return runtimeMetrics
 }
 
 // osVersion is only available on unix-like systems as it depends on the

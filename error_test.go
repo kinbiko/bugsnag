@@ -7,6 +7,7 @@ import (
 )
 
 func TestSeverityReasonType(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		exp string
 		err Error
@@ -18,7 +19,9 @@ func TestSeverityReasonType(t *testing.T) {
 		{exp: "userSpecifiedSeverity", err: Error{Severity: SeverityError}},
 		{exp: "userSpecifiedSeverity", err: Error{Severity: SeverityError, Unhandled: true, Panic: true}},
 	} {
+		tc := tc
 		t.Run(tc.exp, func(t *testing.T) {
+			t.Parallel()
 			if got := severityReasonType(&tc.err); got != tc.exp {
 				t.Errorf("expected severity reason type '%s' but got '%s'", tc.exp, got)
 			}
@@ -48,7 +51,9 @@ func TestSeverityReasonType(t *testing.T) {
 */
 // Tests that the way Wrap works is relatively intuitive.
 func TestWrap(t *testing.T) {
+	t.Parallel()
 	t.Run("no real input", func(t *testing.T) {
+		t.Parallel()
 		if wrappedErr := Wrap(nil, nil); wrappedErr != nil { //nolint:staticcheck // Testing that we don't do a dumb when users do a dumb
 			t.Errorf("expected no error returned but got: %s", wrappedErr)
 		}
@@ -95,7 +100,9 @@ func TestWrap(t *testing.T) {
 		{ctx: nil, err: err, msg: fmtBase, args: args, expErrString: wrappedFmtMsg, name: "all args but ctx"},
 		{ctx: ctx, err: err, msg: fmtBase, args: args, expErrString: wrappedFmtMsg, name: "all args"},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			if tc.msg != "" || tc.args != nil {
 				tc.args = append([]interface{}{tc.msg}, tc.args...)
 			}

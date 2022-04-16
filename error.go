@@ -24,7 +24,7 @@ type Error struct {
 	Severity  severity
 
 	err        error
-	ctx        context.Context
+	ctx        context.Context // nolint:containedctx // We're storing it for valid reasons
 	stacktrace []*JSONStackframe
 	msg        string
 }
@@ -71,14 +71,22 @@ func Wrap(ctx context.Context, err error, msgAndFmtArgs ...interface{}) *Error {
 	if ctx == nil && err == nil && msgAndFmtArgs == nil {
 		return nil
 	}
-	e := &Error{err: err, ctx: ctx, stacktrace: makeStacktrace(makeModulePath())}
 
+	message := ""
 	if l := len(msgAndFmtArgs); l > 0 {
 		if msg, ok := msgAndFmtArgs[0].(string); ok {
-			e.msg = fmt.Sprintf(msg, msgAndFmtArgs[1:]...)
+			message = fmt.Sprintf(msg, msgAndFmtArgs[1:]...)
 		}
 	}
-	return e
+	return &Error{
+		Unhandled:  false,
+		Panic:      false,
+		Severity:   severityUndetermined,
+		err:        err,
+		ctx:        ctx,
+		stacktrace: makeStacktrace(makeModulePath()),
+		msg:        message,
+	}
 }
 
 func makeStacktrace(module string) []*JSONStackframe {
@@ -88,7 +96,7 @@ func makeStacktrace(module string) []*JSONStackframe {
 	pcs := ptrs[0:runtime.Callers(0, ptrs[:])]
 
 	stacktrace := make([]*JSONStackframe, len(pcs))
-	for i, pc := range pcs {
+	for i, pc := range pcs { // nolint:varnamelen // indexes are conventionally i
 		pc-- // pc - 1 is the *real* program counter, for reasons beyond me.
 
 		file, lineNumber, method := "unknown", 0, "unknown"

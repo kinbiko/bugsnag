@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,11 +18,12 @@ import (
 	"github.com/kinbiko/jsonassert"
 )
 
+// nolint:paralleltest // This starts a webservice and order matters internally
 func TestIntegration(t *testing.T) {
 	reports := make(chan string, 1)
 
 	ntfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		payload, err := ioutil.ReadAll(r.Body)
+		payload, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -180,6 +181,7 @@ func TestIntegration(t *testing.T) {
 }
 
 func TestReportSerialization(t *testing.T) {
+	t.Parallel()
 	payload, err := json.Marshal(&bugsnag.JSONErrorReport{
 		APIKey: "hello",
 		Notifier: &bugsnag.JSONNotifier{
@@ -189,7 +191,6 @@ func TestReportSerialization(t *testing.T) {
 		},
 		Events: []*bugsnag.JSONEvent{
 			{
-
 				PayloadVersion: "5",
 				Context:        "UserController",
 				Unhandled:      true,

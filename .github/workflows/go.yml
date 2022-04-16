@@ -36,7 +36,7 @@ jobs:
       run: go test -race -v ./...
 
     - name: Install Linter
-      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.27.0
+      run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.45.2
 
     - name: Lint
       run: ./bin/golangci-lint run .

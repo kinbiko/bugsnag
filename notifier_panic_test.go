@@ -1,3 +1,4 @@
+//go:build !race
 // +build !race
 
 package bugsnag
@@ -13,6 +14,7 @@ import (
 // attempting to write to a closed channel.
 // Therefore, the test is only run when the race detector is not running.
 func TestNoPanicsWhenShuttingDown(t *testing.T) {
+	t.Parallel()
 	cfg := Configuration{
 		APIKey:       "abcd1234abcd1234abcd1234abcd1234",
 		ReleaseStage: "dev",
@@ -26,6 +28,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 	}
 
 	t.Run("doesn't panic if invoking StartSession or Notify", func(t *testing.T) {
+		t.Parallel()
 		n, err := New(cfg)
 		if err != nil {
 			t.Fatal(err)
@@ -36,6 +39,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 	})
 
 	t.Run("StartSession and Notify are uncalled", func(t *testing.T) {
+		t.Parallel()
 		n, err := New(cfg)
 		if err != nil {
 			t.Fatal(err)
@@ -44,6 +48,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 	})
 
 	t.Run("Notify after Close invokes InternalErrorCallback", func(t *testing.T) {
+		t.Parallel()
 		var got error
 		cfg.InternalErrorCallback = func(err error) { got = err }
 
@@ -64,6 +69,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 	})
 
 	t.Run("StartSession after Close invokes InternalErrorCallback", func(t *testing.T) {
+		t.Parallel()
 		var got error
 		cfg.InternalErrorCallback = func(err error) { got = err }
 
@@ -84,7 +90,9 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 	})
 
 	t.Run("Close after Close invokes InternalErrorCallback", func(t *testing.T) {
+		t.Parallel()
 		var got error
+		cfg := cfg
 		cfg.InternalErrorCallback = func(err error) { got = err }
 
 		n, err := New(cfg)

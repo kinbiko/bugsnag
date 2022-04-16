@@ -12,6 +12,7 @@ import (
 )
 
 func TestApp(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name string
 		cfg  *Configuration
@@ -24,7 +25,9 @@ func TestApp(t *testing.T) {
 			exp:  `{ "duration": 5000, "releaseStage": "staging", "version": "1.5.2" }`,
 		},
 	} {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			tc.cfg.appStartTime = time.Now().Add(-5 * time.Second)
 			payload, err := json.Marshal(makeJSONApp(tc.cfg))
 			if err != nil {
@@ -36,6 +39,7 @@ func TestApp(t *testing.T) {
 }
 
 func TestDevice(t *testing.T) {
+	t.Parallel()
 	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 	if err != nil {
 		t.Fatal(err)
@@ -62,6 +66,7 @@ func TestDevice(t *testing.T) {
 }
 
 func TestMakeExceptions(t *testing.T) {
+	t.Parallel()
 	n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 	if err != nil {
 		t.Fatal(err)
@@ -103,7 +108,9 @@ func TestMakeExceptions(t *testing.T) {
 }
 
 func TestInternalErrorCallback(t *testing.T) {
+	t.Parallel()
 	t.Run("gets invoked when set", func(t *testing.T) {
+		t.Parallel()
 		var got error
 		n, err := New(Configuration{
 			APIKey:       "abcd1234abcd1234abcd1234abcd1234",
@@ -124,6 +131,7 @@ func TestInternalErrorCallback(t *testing.T) {
 	})
 
 	t.Run("doesn't panic when not set", func(t *testing.T) {
+		t.Parallel()
 		n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
 		if err != nil {
 			t.Fatal(err)
