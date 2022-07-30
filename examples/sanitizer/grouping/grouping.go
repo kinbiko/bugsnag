@@ -1,4 +1,4 @@
-package main
+package grouping
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/kinbiko/bugsnag"
 )
 
-func main() {
+func Run() {
 	n, _ := bugsnag.New(bugsnag.Configuration{
 		APIKey:       os.Getenv("BUGSNAG_API_KEY"),
 		AppVersion:   "1.2.3",

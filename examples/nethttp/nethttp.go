@@ -1,4 +1,4 @@
-package main
+package nethttp
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 type server struct{ *bugsnag.Notifier }
 
-func main() {
+func Run() {
 	n, err := bugsnag.New(bugsnag.Configuration{
 		APIKey:       os.Getenv("BUGSNAG_API_KEY"),
 		AppVersion:   "1.2.3",
@@ -31,11 +31,13 @@ func (s *server) HandleCommentsGet() http.HandlerFunc {
 		Comment string `json:"comment"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		w.WriteHeader(200)
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(&res{Comment: "Nature must wait!"}); err != nil {
-			s.Notify(r.Context(), err)
+			s.Notify(r.Context(), s.Wrap(ctx, err))
 		}
+		s.Notify(ctx, s.Wrap(ctx, fmt.Errorf("nature must wait!")))
 	}
 }
 

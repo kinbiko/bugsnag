@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"context"
@@ -17,7 +17,7 @@ type application struct {
 	ntf *bugsnag.Notifier
 }
 
-func main() {
+func Run() {
 	ctx := context.Background()
 	notifier, err := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "v1.2.3", ReleaseStage: "dev"})
 	if err != nil {
