@@ -18,7 +18,6 @@ import (
 	"github.com/kinbiko/jsonassert"
 )
 
-// nolint:paralleltest // This starts a webservice and order matters internally
 func TestIntegration(t *testing.T) {
 	reports := make(chan string, 1)
 
