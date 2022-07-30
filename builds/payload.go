@@ -76,17 +76,14 @@ type Provider string
 
 // ToProvider converts a string into a Provider, if valid, otherwise returns "".
 func ToProvider(s string) Provider {
-	for _, s := range []string{
-		"github",
-		"github-enterprise",
-		"bitbucket",
-		"bitbucket-server",
-		"gitlab",
-		"gitlab-onpremise",
-	} {
-		return Provider(s)
-	}
-	return ""
+	return map[string]Provider{
+		"github":            ProviderGitHub,
+		"github-enterprise": ProviderGitHubEnterprise,
+		"bitbucket":         ProviderBitbucket,
+		"bitbucket-server":  ProviderBitbucketServer,
+		"gitlab":            ProviderGitLab,
+		"gitlab-onpremise":  ProviderGitLabOnPremise,
+	}[s]
 }
 
 const (
@@ -97,14 +94,14 @@ const (
 	// GitHub's enterprise platform.
 	ProviderGitHubEnterprise = "github-enterprise"
 	// ProviderBitbucket indicates that your source code is stored on
-	// Bitbucket's SaaS platform.
+	// Bitbucket's SaaS platform. Git and Mercurial are supported for
+	// Bitbucket.
 	ProviderBitbucket = "bitbucket"
 	// ProviderBitbucketServer indicates that your source code is stored on
-	// Bitbucket's Server platform. Git and Mercurial are supported for
-	// Bitbucket
+	// Bitbucket's Server platform. Formerly known as Stash.
 	ProviderBitbucketServer = "bitbucket-server"
 	// ProviderGitLab indicates that your source code is stored on
-	// GitLab's SaaS platform. Formerly known as Stash.
+	// GitLab's SaaS platform.
 	ProviderGitLab = "gitlab"
 	// ProviderGitLabOnPremise indicates that your source code is stored on
 	// GitLab's GitLab CE or GitLab Enterprise platform.
