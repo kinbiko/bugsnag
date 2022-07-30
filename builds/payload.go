@@ -1,8 +1,8 @@
 package builds
 
-// Payload defines the complete payload to Bugsnag's build API as defined here:
+// JSONBuildRequest defines the complete payload to Bugsnag's build API as defined here:
 // https://bugsnagbuildapi.docs.apiary.io/#introduction/matching-error-events-and-sessions-to-builds
-type Payload struct {
+type JSONBuildRequest struct {
 	// The notifier API key of the project.
 	APIKey string `json:"apiKey"` // E.g. "1234abcd1234abcd1234abcd1234abcd"
 
@@ -30,7 +30,7 @@ type Payload struct {
 
 	// Information about the source control of the code. This can be used to
 	// link errors to the source code (for supported source control tools)
-	SourceControl *SourceControl `json:"sourceControl,omitempty"`
+	SourceControl *JSONSourceControl `json:"sourceControl,omitempty"`
 
 	// The version code of the application (Android only).
 	// For Android apps if no code is provided Bugsnag will associate the build
@@ -56,7 +56,7 @@ type Payload struct {
 
 // Information about the source control of the code. This can be used to
 // link errors to the source code (for supported source control tools)
-type SourceControl struct {
+type JSONSourceControl struct {
 	// If the provider can be inferred from the repository then it is not
 	// required.
 	Provider Provider `json:"provider,omitempty"`
