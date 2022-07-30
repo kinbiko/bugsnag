@@ -174,6 +174,7 @@ type causer interface {
 
 func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport, context.Context) {
 	unhandled := makeUnhandled(err)
+	exs := makeExceptions(err)
 	contextData, augmentedCtx := extractAugmentedContextData(ctx, err, unhandled)
 	return &JSONErrorReport{
 		APIKey:   n.cfg.APIKey,
@@ -185,13 +186,14 @@ func (n *Notifier) makeReport(ctx context.Context, err error) (*JSONErrorReport,
 				Unhandled:      unhandled,
 				Severity:       makeSeverity(err),
 				SeverityReason: &JSONSeverityReason{Type: severityReasonType(err)},
-				Exceptions:     makeExceptions(err),
+				Exceptions:     exs,
 				Breadcrumbs:    contextData.breadcrumbs,
 				User:           contextData.user,
 				App:            makeJSONApp(n.cfg),
 				Device:         n.makeJSONDevice(),
 				Session:        contextData.session,
 				Metadata:       contextData.metadata,
+				GroupingHash:   makeGroupingHash(exs),
 			},
 		},
 	}, augmentedCtx
@@ -373,6 +375,41 @@ func makeNotifier(cfg *Configuration) *JSONNotifier {
 		URL:     "https://github.com/kinbiko/bugsnag",
 		Version: cfg.runtimeConstants.notifierVersion,
 	}
+}
+
+// This bit of custom logic ensures a better experience when wrapping a
+// non-Bugsnag err inside a Bugsnag Error.
+// Without this events would all be grouped under the same error in the
+// dashboard becaue the deepest "exception" (the non-Bugsnag err) which
+// gets given a default stackframe of:
+//
+//   {
+//     (... other fluff ...)
+//     "file": "unknown file",
+//     "in_project": null,
+//     "line_number": 0,
+//     "method": "unknown method"
+//   }
+//
+// Even though this frame is not in project (or rather "null in project",
+// whatever that means), lower exceptions take priority over frames being
+// in project or not.
+//
+// This logic returns a grouping hash based on the deepest in-project
+// stackframe, regardless of which "exception" it comes from.
+//
+// You can disable this logic in a ErrorReportSanitizer by setting the grouping
+// hash to "".
+func makeGroupingHash(exs []*JSONException) string {
+	for i := len(exs) - 1; i >= 0; i-- {
+		trace := exs[i].Stacktrace
+		for _, frame := range trace {
+			if frame.InProject {
+				return fmt.Sprintf("%s:%d", frame.File, frame.LineNumber)
+			}
+		}
+	}
+	return ""
 }
 
 func extractLowestBugsnagError(err error) *Error {
