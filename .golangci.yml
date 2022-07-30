@@ -267,19 +267,20 @@ issues:
     # Exclude some linters from running on tests files.
     - path: _test\.go
       linters:
-        - dupl
         - containedctx # We want this because context is central for this package and useful in test case structs
+        - cyclop
+        - dupl
         - errcheck
+        - errchkjson
         - exhaustivestruct
         - funlen
         - gocognit
         - gocyclo
         - gomnd
         - lll
+        - paralleltest
         - stylecheck
         - testpackage
-        - cyclop
-        - errchkjson
         - varnamelen
     - path: \.go
       linters:

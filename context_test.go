@@ -91,7 +91,6 @@ func TestContextWithMethods(t *testing.T) {
 }
 
 func TestCtxSerialization(t *testing.T) {
-	t.Parallel()
 	n, err := New(Configuration{APIKey: "1234abcd1234abcd1234abcd1234abcd", AppVersion: "1.2.3", ReleaseStage: "test"})
 
 	ctx := context.Background()
@@ -102,7 +101,6 @@ func TestCtxSerialization(t *testing.T) {
 	ctx = n.WithBugsnagContext(ctx, "/pokemon?type=fire")
 
 	t.Run("json serialization", func(t *testing.T) {
-		t.Parallel()
 		b, _ := json.Marshal(getAttachedContextData(ctx))
 		jsonassert.New(t).Assertf(string(b), `{
 			"cx": "/pokemon?type=fire",
@@ -113,7 +111,6 @@ func TestCtxSerialization(t *testing.T) {
 	})
 
 	t.Run("serialize + deserialize yields the same data", func(t *testing.T) {
-		t.Parallel()
 		if err != nil {
 			t.Fatal(err)
 		}
