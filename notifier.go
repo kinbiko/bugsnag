@@ -380,7 +380,7 @@ func makeNotifier(cfg *Configuration) *JSONNotifier {
 // This bit of custom logic ensures a better experience when wrapping a
 // non-Bugsnag err inside a Bugsnag Error.
 // Without this events would all be grouped under the same error in the
-// dashboard becaue the deepest "exception" (the non-Bugsnag err) which
+// dashboard because the deepest "exception" (the non-Bugsnag err) which
 // gets given a default stackframe of:
 //
 //   {
@@ -402,8 +402,7 @@ func makeNotifier(cfg *Configuration) *JSONNotifier {
 // hash to "".
 func makeGroupingHash(exs []*JSONException) string {
 	for i := len(exs) - 1; i >= 0; i-- {
-		trace := exs[i].Stacktrace
-		for _, frame := range trace {
+		for _, frame := range exs[i].Stacktrace {
 			if frame.InProject {
 				return fmt.Sprintf("%s:%d", frame.File, frame.LineNumber)
 			}
