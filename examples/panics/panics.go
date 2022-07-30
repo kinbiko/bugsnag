@@ -1,4 +1,4 @@
-package main
+package panics
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/kinbiko/bugsnag"
 )
 
-func main() {
+func Run() {
 	ctx := context.Background()
 	n, err := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "1.2.3", ReleaseStage: "dev"})
 	if err != nil {
@@ -31,5 +31,7 @@ func main() {
 		n.Notify(ctx, bErr)
 	}()
 
-	panic("oh ploppers")
+	err = fmt.Errorf("oh ploppers")
+	err = bugsnag.Wrap(ctx, err, "maurice moss")
+	panic(err)
 }

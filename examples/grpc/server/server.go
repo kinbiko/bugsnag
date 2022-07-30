@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func main() {
+func Run() {
 	notifier, err := bugsnag.New(bugsnag.Configuration{APIKey: os.Getenv("BUGSNAG_API_KEY"), AppVersion: "1.2.3", ReleaseStage: "dev"})
 	if err != nil {
 		panic(err)
@@ -76,7 +76,7 @@ type server struct {
 func (s *server) GetComment(ctx context.Context, in *pb.GetCommentReq) (*pb.GetCommentRes, error) {
 	fmt.Println("GetComment invoked")
 	if true {
-		panic(fmt.Errorf("oh ploppers"))
+		return nil, bugsnag.Wrap(ctx, fmt.Errorf("oh ploppers"))
 	}
 	return &pb.GetCommentRes{Id: in.GetId(), Msg: "I aim to misbehave"}, nil
 }
