@@ -10,7 +10,9 @@
 Well-documented, maintainable, idiomatic, opinionated, and **unofficial** rewrite of the [Bugsnag Go notifier](https://github.com/bugsnag/bugsnag-go).
 See [this document](./.github/official-notifier-difference.md) for an overview of the differences between this package and the official notifier.
 
-## Usage
+In addition to the notifier library in `github.com/kinbiko/bugsnag`, there's a `bugsnag` command-line application in `github.com/kinbiko/bugsnag/cmd/bugsnag` that can easily report builds and releases to Bugsnag for an even better debugging experience.
+
+## Notifier Usage
 
 Make sure you're importing this package, and not the official notifier:
 
@@ -84,7 +86,7 @@ if r := recover(); r != nil {
 For each session, usually synonymous with 'request' (HTTP/gRPC/AMQP/PubSub/etc.), you should call `ctx = notifier.StartSession(ctx)`, usually performed in a middleware function.
 Any **unhandled** errors that are reported along with this `ctx` will count negatively towards your stability score.
 
-## Examples
+### Examples
 
 Check out the `examples/` directory for more advanced blueprints:
 
@@ -98,3 +100,29 @@ Check out the `examples/` directory for more advanced blueprints:
   - etc.
 
 In particular, the examples highlight the additional the features that are different from, or not found, in the [official notifier](https://github.com/bugsnag/bugsnag-go).
+
+## `bugsnag` command-line application usage
+
+Install the binary with:
+
+```console
+$ go install github.com/kinbiko/bugsnag/cmd/bugsnag
+```
+
+Report a new release to Bugsnag with
+
+```console
+$ bugsnag release \
+    --api-key=$SOME_API_KEY \
+    --app-version=5.1.2 \
+    --release-stage=staging \
+    --repository=https://github.com/kinbiko/bugsnag \
+    --revision=64414f621b33680419b1cb3e5c622b510207ae1e \
+    --builder-name=kinbiko \
+    --metadata="KEY1=VALUE1,KEY2=VALUE2"
+release info published for version 5.1.2
+```
+
+See `bugsnag release --help` for more info and additional configuration parameters.
+
+If you have environment variables `BUGSNAG_API_KEY` and `BUGSNAG_APP_VERSION` (or `APP_VERSION`) set, then you can skip the first two (required) flags.
