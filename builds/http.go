@@ -8,14 +8,14 @@ import (
 	"net/http"
 )
 
-// DefaultPublisher returns a publisher for Payloads against the Bugsnag SaaS
+// DefaultPublisher returns a publisher for requests against the Bugsnag SaaS
 // endpoint. If you need to target your own on-premise installation, please use
 // NewPublisher.
 func DefaultPublisher() *Publisher {
 	return &Publisher{endpoint: "https://build.bugsnag.com/"}
 }
 
-// NewPublisher returns a publisher for Payloads against an on-premise
+// NewPublisher returns a publisher for requests against an on-premise
 // installation of Bugsnag. If you're using the SaaS solution (app.bugsnag.com),
 // please use the DefaultPublisher.
 func NewPublisher(endpoint string) *Publisher {
@@ -28,7 +28,7 @@ type Publisher struct {
 	endpoint string
 }
 
-// Publish sends the payload to Bugsnag's Build API.
+// Publish sends the request to Bugsnag's Build API.
 func (p *Publisher) Publish(req *JSONBuildRequest) error {
 	if p.endpoint == "" {
 		return fmt.Errorf("publisher created incorrectly; please use NewPublisher or DefaultPublisher to construct your builds.Publisher")
@@ -42,7 +42,7 @@ func (p *Publisher) Publish(req *JSONBuildRequest) error {
 	httpReq, err := http.NewRequest("POST", p.endpoint, bytes.NewBuffer(b))
 
 	if err != nil {
-		return fmt.Errorf("error when POST-ing payload to '%s': %w", p.endpoint, err)
+		return fmt.Errorf("error when POST-ing request to '%s': %w", p.endpoint, err)
 	}
 	httpReq.Header.Add("Content-Type", "application/json")
 
