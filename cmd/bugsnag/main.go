@@ -3,19 +3,21 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 )
 
 func main() {
-	if err := run(getEnvVars()); err != nil {
-		log.Fatal(err.Error())
+	if err := run(os.Args[1:], getEnvVars()); err != nil {
+		fmt.Printf("%s\n", err.Error())
+		os.Exit(1)
 	}
 }
 
-func run(envvars map[string]string) error {
-	// TODO: Only run this for 'bugsnag release'
+func run(args []string, envvars map[string]string) error {
+	if len(args) == 0 || args[0] != "release" {
+		return fmt.Errorf("See 'bugsnag --help' for usage")
+	}
 
 	var (
 		flagAPIKey = flag.String(
@@ -93,6 +95,7 @@ The SHA (or 7-character shorthand) of the git commit associated with the build.`
 		)
 	)
 	flag.Parse()
+
 	fmt.Printf("--api-key=%s\n", *flagAPIKey)
 	fmt.Printf("--app-version=%s\n", *flagAppVersion)
 	fmt.Printf("--release-stage=%s\n", *flagReleaseStage)
