@@ -94,4 +94,28 @@ func TestRelease(t *testing.T) {
 			}
 		}`)
 	})
+
+	t.Run("uses defaults", func(t *testing.T) {
+		cmd := fmt.Sprintf(`release --endpoint=%s`, ts.URL)
+		err := run(strings.Split(cmd, " "), map[string]string{
+			"BUGSNAG_API_KEY": "1234abcd1234abcd1234abcd1234abcd",
+			"APP_VERSION":     "2.5.2",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var body string
+		select {
+		case body = <-reqs:
+		case <-time.After(500 * time.Millisecond):
+			t.Fatal("no request received after half a second.")
+		}
+
+		jsonassert.New(t).Assertf(body, `
+		{
+			"apiKey": "1234abcd1234abcd1234abcd1234abcd",
+			"appVersion": "2.5.2"
+		}`)
+	})
 }

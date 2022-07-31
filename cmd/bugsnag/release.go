@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/kinbiko/bugsnag/builds"
@@ -39,7 +38,9 @@ bugsnag will look for a BUGSNAG_API_KEY environment variable if no value is prov
 		appVersion: releaseCmd.String(
 			"app-version",
 			"",
-			`Required. The version of your application that you're reporting.`,
+			`Required. The version of your application that you're reporting.
+bugsnag will look for a BUGSNAG_APP_VERSION environment variable if no value is provided.
+Failing that, bugsnag will look for an APP_VERSION environment variable.`,
 		),
 
 		releaseStage: releaseCmd.String(
@@ -170,6 +171,13 @@ func (app *application) printReleaseDebug() {
 
 func populateReleaseDefaults(req *builds.JSONBuildRequest, envVars map[string]string) {
 	if req.APIKey == "" {
-		req.APIKey = os.Getenv("BUGSNAG_API_KEY")
+		req.APIKey = envVars["BUGSNAG_API_KEY"]
+	}
+
+	if req.AppVersion == "" {
+		req.AppVersion = envVars["BUGSNAG_APP_VERSION"]
+		if req.AppVersion == "" {
+			req.AppVersion = envVars["APP_VERSION"]
+		}
 	}
 }
