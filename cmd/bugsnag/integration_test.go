@@ -29,6 +29,7 @@ func TestRelease(t *testing.T) {
 		cmd := fmt.Sprintf(`release
 --api-key=1234abcd1234abcd1234abcd1234abcd
 --app-version=2.5.2
+--release-stage=
 --endpoint=%s`, ts.URL)
 		err := run(strings.Split(cmd, "\n"), map[string]string{})
 		if err != nil {
@@ -115,7 +116,8 @@ func TestRelease(t *testing.T) {
 		jsonassert.New(t).Assertf(body, `
 		{
 			"apiKey": "1234abcd1234abcd1234abcd1234abcd",
-			"appVersion": "2.5.2"
+			"appVersion": "2.5.2",
+			"releaseStage": "production"
 		}`)
 	})
 }

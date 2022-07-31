@@ -45,8 +45,9 @@ Failing that, bugsnag will look for an APP_VERSION environment variable.`,
 
 		releaseStage: releaseCmd.String(
 			"release-stage",
-			"",
-			`Optional. The environment in which your application is running.`,
+			"production",
+			`Optional. The environment in which your application is running.
+Set to "" explicitly to report a build instead of a release.`,
 		),
 
 		provider: releaseCmd.String(
