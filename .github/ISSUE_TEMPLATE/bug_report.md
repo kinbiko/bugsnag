@@ -23,7 +23,12 @@ This package comes with an `InternalErrorCallback` configuration option, which y
 
 ### What actually happened?
 
-<!-- Please paste any output that you saw in your logs. Make sure you set a InternalErrorCallback configuration option in the constructor, and log all errors that appear here. -->
+<!-- Please paste any output that you saw in your logs.
+
+If you're reporting a bug against the notifier, make sure you set a InternalErrorCallback configuration option in the constructor, and log all errors that appear here.
+
+If you're reporting a bug against the 'bugsnag' command line application, please include the complete command you're executing (include the --debug flag please). You may redact your API key.
+-->
 
 ```console
 any output goes here

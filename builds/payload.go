@@ -1,6 +1,6 @@
 package builds
 
-// JSONBuildRequest defines the complete payload to Bugsnag's build API as defined here:
+// JSONBuildRequest defines the complete request body to Bugsnag's build API as defined here:
 // https://bugsnagbuildapi.docs.apiary.io/#introduction/matching-error-events-and-sessions-to-builds
 type JSONBuildRequest struct {
 	// The notifier API key of the project.
