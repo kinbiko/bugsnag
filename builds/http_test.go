@@ -18,6 +18,15 @@ func TestNonConstructedPublisher(t *testing.T) {
 }
 
 func TestPublishingBuilds(t *testing.T) {
+	testServer := func() (*httptest.Server, chan string) {
+		reqs := make(chan string, 10)
+		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := ioutil.ReadAll(r.Body)
+			reqs <- string(body)
+			w.Write([]byte(`{"status": "ok"}`))
+		})), reqs
+	}
+
 	ts, reqs := testServer()
 	defer ts.Close()
 	p := builds.NewPublisher(ts.URL)
@@ -74,13 +83,4 @@ func TestPublishingBuilds(t *testing.T) {
 		}`)
 	})
 
-}
-
-func testServer() (*httptest.Server, chan string) {
-	reqs := make(chan string, 10)
-	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, _ := ioutil.ReadAll(r.Body)
-		reqs <- string(body)
-		w.Write([]byte(`{"status": "ok"}`))
-	})), reqs
 }

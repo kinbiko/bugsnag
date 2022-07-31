@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -15,7 +15,7 @@ func DefaultPublisher() *Publisher {
 	return &Publisher{endpoint: "https://build.bugsnag.com/"}
 }
 
-// DefaultPublisher returns a publisher for Payloads against an on-premise
+// NewPublisher returns a publisher for Payloads against an on-premise
 // installation of Bugsnag. If you're using the SaaS solution (app.bugsnag.com),
 // please use the DefaultPublisher.
 func NewPublisher(endpoint string) *Publisher {
@@ -28,13 +28,13 @@ type Publisher struct {
 	endpoint string
 }
 
-// Publish validates and sends the payload to Bugsnag's Build API.
-func (p *Publisher) Publish(pl *JSONBuildRequest) error {
+// Publish sends the payload to Bugsnag's Build API.
+func (p *Publisher) Publish(req *JSONBuildRequest) error {
 	if p.endpoint == "" {
 		return fmt.Errorf("publisher created incorrectly; please use NewPublisher or DefaultPublisher to construct your builds.Publisher")
 	}
 
-	b, err := json.Marshal(pl)
+	b, err := json.Marshal(req)
 	if err != nil {
 		return fmt.Errorf("unable to marshal JSON: %w", err)
 	}
@@ -51,7 +51,7 @@ func (p *Publisher) Publish(pl *JSONBuildRequest) error {
 		return err
 	}
 
-	got, err := ioutil.ReadAll(httpRes.Body)
+	got, err := io.ReadAll(httpRes.Body)
 	if err != nil {
 		return err
 	}
