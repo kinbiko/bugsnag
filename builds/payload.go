@@ -58,8 +58,9 @@ type JSONBuildRequest struct {
 // link errors to the source code (for supported source control tools)
 type JSONSourceControl struct {
 	// If the provider can be inferred from the repository then it is not
-	// required.
-	Provider Provider `json:"provider,omitempty"`
+	// required. Must be one of: "github", "github-enterprise", "bitbucket",
+	// "bitbucket-server", "gitlab", or "gitlab-onpremise".
+	Provider string `json:"provider,omitempty"`
 
 	// Repository represents the URL of the repository containing the source
 	// code being deployed.
@@ -69,41 +70,3 @@ type JSONSourceControl struct {
 	// built (short or long hash).
 	Revision string `json:"revision"`
 }
-
-// Provider is the name of the source control provider that contains the
-// source code for the build.
-type Provider string
-
-// ToProvider converts a string into a Provider, if valid, otherwise returns "".
-func ToProvider(s string) Provider {
-	return map[string]Provider{
-		"github":            ProviderGitHub,
-		"github-enterprise": ProviderGitHubEnterprise,
-		"bitbucket":         ProviderBitbucket,
-		"bitbucket-server":  ProviderBitbucketServer,
-		"gitlab":            ProviderGitLab,
-		"gitlab-onpremise":  ProviderGitLabOnPremise,
-	}[s]
-}
-
-const (
-	// ProviderGitHub indicates that your source code is stored on GitHub's
-	// SaaS platform.
-	ProviderGitHub = "github"
-	// ProviderGitHubEnterprise indicates that your source code is stored on
-	// GitHub's enterprise platform.
-	ProviderGitHubEnterprise = "github-enterprise"
-	// ProviderBitbucket indicates that your source code is stored on
-	// Bitbucket's SaaS platform. Git and Mercurial are supported for
-	// Bitbucket.
-	ProviderBitbucket = "bitbucket"
-	// ProviderBitbucketServer indicates that your source code is stored on
-	// Bitbucket's Server platform. Formerly known as Stash.
-	ProviderBitbucketServer = "bitbucket-server"
-	// ProviderGitLab indicates that your source code is stored on
-	// GitLab's SaaS platform.
-	ProviderGitLab = "gitlab"
-	// ProviderGitLabOnPremise indicates that your source code is stored on
-	// GitLab's GitLab CE or GitLab Enterprise platform.
-	ProviderGitLabOnPremise = "gitlab-onpremise"
-)
