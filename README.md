@@ -106,7 +106,7 @@ In particular, the examples highlight the additional the features that are diffe
 Install the binary with:
 
 ```console
-$ go install github.com/kinbiko/bugsnag/cmd/bugsnag
+$ go install github.com/kinbiko/bugsnag/cmd/bugsnag@latest
 ```
 
 Report a new release to Bugsnag with
