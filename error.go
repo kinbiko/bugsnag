@@ -141,9 +141,10 @@ func calculateSourcepathHeuristic(file string) string {
 		//   "bugsnag",
 		//   "examples/cmd/cli/main.go",
 		// ]
-		split := strings.SplitN(file, "/", 4)
-		if len(split) == 4 {
-			return split[3]
+		numSplits := 4
+		split := strings.SplitN(file, "/", numSplits)
+		if len(split) == numSplits {
+			return split[numSplits-1]
 		}
 	}
 	return file
