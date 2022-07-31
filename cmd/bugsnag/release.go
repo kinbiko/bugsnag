@@ -3,10 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/kinbiko/bugsnag/builds"
 )
 
+// These fields represent command line flags and all have to be pointers as
+// they will be unset until Parse is called.
 type releaseFlags struct {
 	apiKey            *string
 	appVersion        *string
@@ -99,43 +102,44 @@ The SHA (or 7-character shorthand) of the git commit associated with the build.`
 			`Optional. Applies to Android builds only.`,
 		),
 
-		debug: releaseCmd.Bool("debug", false, "Optional. Turn on for debug logs"),
+		debug: releaseCmd.Bool("debug", false, "Turn on for debug logs"),
 	}
 }
 
 func (app *application) runRelease(envVars map[string]string) error {
-	if *app.releaseFlags.debug {
-		fmt.Printf("--api-key=%s\n", *app.releaseFlags.apiKey)
-		fmt.Printf("--app-version=%s\n", *app.releaseFlags.appVersion)
-		fmt.Printf("--release-stage=%s\n", *app.releaseFlags.releaseStage)
-		fmt.Printf("--provider=%s\n", *app.releaseFlags.provider)
-		fmt.Printf("--repository=%s\n", *app.releaseFlags.repository)
-		fmt.Printf("--revision=%s\n", *app.releaseFlags.revision)
-		fmt.Printf("--builder=%s\n", *app.releaseFlags.builder)
-		fmt.Printf("--metadata=%s\n", *app.releaseFlags.metadata)
-		fmt.Printf("--auto-assign-release=%v\n", *app.releaseFlags.autoAssignRelease)
-		fmt.Printf("--endpoint=%s\n", *app.releaseFlags.endpoint)
-		fmt.Printf("--app-version-code=%d\n", *app.releaseFlags.appVersionCode)
-		fmt.Printf("--app-bundle-version=%s\n", *app.releaseFlags.appBundleVersion)
-		fmt.Printf("--debug=%v\n", *app.releaseFlags.debug)
+	rf := app.releaseFlags
+	if *rf.debug {
+		fmt.Printf("--api-key=%s\n", *rf.apiKey)
+		fmt.Printf("--app-version=%s\n", *rf.appVersion)
+		fmt.Printf("--release-stage=%s\n", *rf.releaseStage)
+		fmt.Printf("--provider=%s\n", *rf.provider)
+		fmt.Printf("--repository=%s\n", *rf.repository)
+		fmt.Printf("--revision=%s\n", *rf.revision)
+		fmt.Printf("--builder=%s\n", *rf.builder)
+		fmt.Printf("--metadata=%s\n", *rf.metadata)
+		fmt.Printf("--auto-assign-release=%v\n", *rf.autoAssignRelease)
+		fmt.Printf("--endpoint=%s\n", *rf.endpoint)
+		fmt.Printf("--app-version-code=%d\n", *rf.appVersionCode)
+		fmt.Printf("--app-bundle-version=%s\n", *rf.appBundleVersion)
+		fmt.Printf("--debug=%v\n", *rf.debug)
 	}
 
 	req := &builds.JSONBuildRequest{
-		APIKey:            *app.releaseFlags.apiKey,
-		AppVersion:        *app.releaseFlags.appVersion,
-		ReleaseStage:      *app.releaseFlags.releaseStage,
-		BuilderName:       *app.releaseFlags.builder,
-		Metadata:          makeMetadata(*app.releaseFlags.metadata),
-		AppVersionCode:    *app.releaseFlags.appVersionCode,
-		AppBundleVersion:  *app.releaseFlags.appBundleVersion,
-		AutoAssignRelease: *app.releaseFlags.autoAssignRelease,
+		APIKey:            *rf.apiKey,
+		AppVersion:        *rf.appVersion,
+		ReleaseStage:      *rf.releaseStage,
+		BuilderName:       *rf.builder,
+		Metadata:          splitByEquals(strings.Split(*rf.metadata, ",")),
+		AppVersionCode:    *rf.appVersionCode,
+		AppBundleVersion:  *rf.appBundleVersion,
+		AutoAssignRelease: *rf.autoAssignRelease,
 	}
 
-	if *app.releaseFlags.repository != "" || *app.releaseFlags.revision != "" {
+	if *rf.repository != "" || *rf.revision != "" {
 		req.SourceControl = &builds.JSONSourceControl{
-			Provider:   *app.releaseFlags.provider,
-			Repository: *app.releaseFlags.repository,
-			Revision:   *app.releaseFlags.revision,
+			Provider:   *rf.provider,
+			Repository: *rf.repository,
+			Revision:   *rf.revision,
 		}
 	}
 
@@ -144,7 +148,7 @@ func (app *application) runRelease(envVars map[string]string) error {
 	}
 
 	publisher := builds.DefaultPublisher()
-	if endpoint := *app.releaseFlags.endpoint; endpoint != "" {
+	if endpoint := *rf.endpoint; endpoint != "" {
 		publisher = builds.NewPublisher(endpoint)
 	}
 	if err := publisher.Publish(req); err != nil {
