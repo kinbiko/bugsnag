@@ -34,6 +34,14 @@ if err != nil {
 defer notifier.Close() // Close once you know there are no further calls to notifier.Notify or notifier.StartSession.
 ```
 
+In order to get the most accurate filepaths in stacktraces (generated in the case of panics and `bugsnag.Error`s), make sure to build (or run) your application with the `-trimpath` flag set:
+
+```
+go build -trimpath ./cmd/myapp
+```
+
+Applications built without `-trimpath` have stacktraces that appear with absolute paths of the machine where `go build` was executed.
+
 ### Reporting errors
 
 The Notifier is now ready for use.
