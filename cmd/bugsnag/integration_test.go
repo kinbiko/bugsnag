@@ -56,7 +56,7 @@ func TestRelease(t *testing.T) {
 --release-stage=staging
 --provider=github
 --repository=https://github.com/kinbiko/bugsnag
---revision=11c61751225399433faa4805ec2011d1
+--revision=2bad72f24eca649379fd33ecb16ec5042ddb28a6
 --builder=kinbiko
 --metadata=Ticket=JIRA-1234
 --auto-assign-release=true
@@ -82,7 +82,7 @@ func TestRelease(t *testing.T) {
 			"releaseStage": "staging",
 			"sourceControl": {
 				"provider": "github",
-				"revision": "11c61751225399433faa4805ec2011d1",
+				"revision": "2bad72f24eca649379fd33ecb16ec5042ddb28a6",
 				"repository": "https://github.com/kinbiko/bugsnag"
 			},
 			"builderName": "kinbiko",
