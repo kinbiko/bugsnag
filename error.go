@@ -105,6 +105,9 @@ func makeStacktrace(module string) []*JSONStackframe {
 			method = fn.Name()
 		}
 		inProject := module != "" && strings.Contains(method, module) || strings.Contains(method, "main.main")
+		if inProject {
+			file = calculateSourcepathHeuristic(file)
+		}
 
 		stacktrace[i] = &JSONStackframe{File: file, LineNumber: lineNumber, Method: method, InProject: inProject}
 	}
@@ -119,6 +122,31 @@ func makeStacktrace(module string) []*JSONStackframe {
 		}
 	}
 	return stacktrace[lastBugsnagIndex+1:]
+}
+
+// This function attempst to rewrite the filepath value to be relative to the
+// root of the repository. This allows correct filepaths in the Bugsnag
+// dashboard.
+// For now, this is limited to in-project files hosted on GitHub.
+// There will be false positives, for most Go repos hosted on GitHub this
+// should work out of the box.
+func calculateSourcepathHeuristic(file string) string {
+	if strings.HasPrefix(file, "github.com") {
+		// Split
+		// "github.com/kinbiko/bugsnag/examples/cmd/cli/main.go"
+		// into
+		// [
+		//   "github.com",
+		//   "kinbiko",
+		//   "bugsnag",
+		//   "examples/cmd/cli/main.go",
+		// ]
+		split := strings.SplitN(file, "/", 4)
+		if len(split) == 4 {
+			return split[3]
+		}
+	}
+	return file
 }
 
 // makeModulePath defines the root of the project that uses this package.
