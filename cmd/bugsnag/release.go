@@ -31,19 +31,23 @@ func newReleaseFlags(releaseCmd *flag.FlagSet) *releaseFlags {
 		apiKey: releaseCmd.String(
 			"api-key",
 			"",
-			`Required. Your Bugsnag project's 32-digit hex string.`,
+			`Required. Your Bugsnag project's 32-digit hex string.
+bugsnag will look for a BUGSNAG_API_KEY environment variable if no value is provided.`,
 		),
 
 		appVersion: releaseCmd.String(
 			"app-version",
 			"",
-			`Required. The version of your application that you're reporting.`,
+			`Required. The version of your application that you're reporting.
+bugsnag will look for a BUGSNAG_APP_VERSION environment variable if no value is provided.
+Failing that, bugsnag will look for an APP_VERSION environment variable.`,
 		),
 
 		releaseStage: releaseCmd.String(
 			"release-stage",
-			"",
-			`Optional. The environment in which your application is running.`,
+			"production",
+			`Optional. The environment in which your application is running.
+Set to "" explicitly to report a build instead of a release.`,
 		),
 
 		provider: releaseCmd.String(
@@ -109,19 +113,7 @@ The SHA (or 7-character shorthand) of the git commit associated with the build.`
 func (app *application) runRelease(envVars map[string]string) error {
 	rf := app.releaseFlags
 	if *rf.debug {
-		fmt.Printf("--api-key=%s\n", *rf.apiKey)
-		fmt.Printf("--app-version=%s\n", *rf.appVersion)
-		fmt.Printf("--release-stage=%s\n", *rf.releaseStage)
-		fmt.Printf("--provider=%s\n", *rf.provider)
-		fmt.Printf("--repository=%s\n", *rf.repository)
-		fmt.Printf("--revision=%s\n", *rf.revision)
-		fmt.Printf("--builder=%s\n", *rf.builder)
-		fmt.Printf("--metadata=%s\n", *rf.metadata)
-		fmt.Printf("--auto-assign-release=%v\n", *rf.autoAssignRelease)
-		fmt.Printf("--endpoint=%s\n", *rf.endpoint)
-		fmt.Printf("--app-version-code=%d\n", *rf.appVersionCode)
-		fmt.Printf("--app-bundle-version=%s\n", *rf.appBundleVersion)
-		fmt.Printf("--debug=%v\n", *rf.debug)
+		app.printReleaseDebug()
 	}
 
 	req := &builds.JSONBuildRequest{
@@ -143,6 +135,8 @@ func (app *application) runRelease(envVars map[string]string) error {
 		}
 	}
 
+	populateReleaseDefaults(req, envVars)
+
 	if err := req.Validate(); err != nil {
 		return fmt.Errorf("Invalid build data: %w\nSee 'bugsnag release --help'", err)
 	}
@@ -157,4 +151,34 @@ func (app *application) runRelease(envVars map[string]string) error {
 
 	fmt.Printf("release info published for version %s\n", req.AppVersion)
 	return nil
+}
+
+func (app *application) printReleaseDebug() {
+	rf := app.releaseFlags
+	fmt.Printf("--api-key=%s\n", *rf.apiKey)
+	fmt.Printf("--app-version=%s\n", *rf.appVersion)
+	fmt.Printf("--release-stage=%s\n", *rf.releaseStage)
+	fmt.Printf("--provider=%s\n", *rf.provider)
+	fmt.Printf("--repository=%s\n", *rf.repository)
+	fmt.Printf("--revision=%s\n", *rf.revision)
+	fmt.Printf("--builder=%s\n", *rf.builder)
+	fmt.Printf("--metadata=%s\n", *rf.metadata)
+	fmt.Printf("--auto-assign-release=%v\n", *rf.autoAssignRelease)
+	fmt.Printf("--endpoint=%s\n", *rf.endpoint)
+	fmt.Printf("--app-version-code=%d\n", *rf.appVersionCode)
+	fmt.Printf("--app-bundle-version=%s\n", *rf.appBundleVersion)
+	fmt.Printf("--debug=%v\n", *rf.debug)
+}
+
+func populateReleaseDefaults(req *builds.JSONBuildRequest, envVars map[string]string) {
+	if req.APIKey == "" {
+		req.APIKey = envVars["BUGSNAG_API_KEY"]
+	}
+
+	if req.AppVersion == "" {
+		req.AppVersion = envVars["BUGSNAG_APP_VERSION"]
+		if req.AppVersion == "" {
+			req.AppVersion = envVars["APP_VERSION"]
+		}
+	}
 }
