@@ -118,7 +118,7 @@ $ bugsnag release \
     --release-stage=staging \
     --repository=https://github.com/kinbiko/bugsnag \
     --revision=64414f621b33680419b1cb3e5c622b510207ae1e \
-    --builder-name=kinbiko \
+    --builder=kinbiko \
     --metadata="KEY1=VALUE1,KEY2=VALUE2"
 release info published for version 5.1.2
 ```
