@@ -120,7 +120,7 @@ func (app *application) runRelease(envVars map[string]string) error {
 		fmt.Printf("--debug=%v\n", *app.releaseFlags.debug)
 	}
 
-	req := builds.JSONBuildRequest{
+	req := &builds.JSONBuildRequest{
 		APIKey:            *app.releaseFlags.apiKey,
 		AppVersion:        *app.releaseFlags.appVersion,
 		ReleaseStage:      *app.releaseFlags.releaseStage,
@@ -143,5 +143,14 @@ func (app *application) runRelease(envVars map[string]string) error {
 		return fmt.Errorf("Invalid build data: %w\nSee 'bugsnag release --help'", err)
 	}
 
+	publisher := builds.DefaultPublisher()
+	if endpoint := *app.releaseFlags.endpoint; endpoint != "" {
+		publisher = builds.NewPublisher(endpoint)
+	}
+	if err := publisher.Publish(req); err != nil {
+		return err
+	}
+
+	fmt.Printf("release info published for version %s\n", req.AppVersion)
 	return nil
 }
