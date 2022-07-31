@@ -123,6 +123,6 @@ $ bugsnag release \
 release info published for version 5.1.2
 ```
 
-See `bugsnag release --help` for more info and additional configuration parameters.
-
 If you have environment variables `BUGSNAG_API_KEY` and `BUGSNAG_APP_VERSION` (or `APP_VERSION`) set, then you can skip the first two (required) flags.
+
+See `bugsnag release --help` for more info and additional configuration parameters.
