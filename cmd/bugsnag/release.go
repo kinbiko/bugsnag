@@ -26,6 +26,7 @@ type releaseFlags struct {
 	debug             *bool
 }
 
+//nolint:funlen // This function is long but it's just a bunch of flag declarations.
 func newReleaseFlags(releaseCmd *flag.FlagSet) *releaseFlags {
 	return &releaseFlags{
 		apiKey: releaseCmd.String(
@@ -110,64 +111,69 @@ The SHA (or 7-character shorthand) of the git commit associated with the build.`
 	}
 }
 
+func makeRelease(flags *releaseFlags) *builds.JSONBuildRequest {
+	req := &builds.JSONBuildRequest{
+		APIKey:            *flags.apiKey,
+		AppVersion:        *flags.appVersion,
+		ReleaseStage:      *flags.releaseStage,
+		BuilderName:       *flags.builder,
+		Metadata:          splitByEquals(strings.Split(*flags.metadata, ",")),
+		AppVersionCode:    *flags.appVersionCode,
+		AppBundleVersion:  *flags.appBundleVersion,
+		AutoAssignRelease: *flags.autoAssignRelease,
+		SourceControl:     nil,
+	}
+
+	if *flags.repository != "" || *flags.revision != "" {
+		req.SourceControl = &builds.JSONSourceControl{
+			Provider:   *flags.provider,
+			Repository: *flags.repository,
+			Revision:   *flags.revision,
+		}
+	}
+	return req
+}
+
 func (app *application) runRelease(envVars map[string]string) error {
-	rf := app.releaseFlags
-	if *rf.debug {
+	flags := app.releaseFlags
+	if *flags.debug {
 		app.printReleaseDebug()
 	}
 
-	req := &builds.JSONBuildRequest{
-		APIKey:            *rf.apiKey,
-		AppVersion:        *rf.appVersion,
-		ReleaseStage:      *rf.releaseStage,
-		BuilderName:       *rf.builder,
-		Metadata:          splitByEquals(strings.Split(*rf.metadata, ",")),
-		AppVersionCode:    *rf.appVersionCode,
-		AppBundleVersion:  *rf.appBundleVersion,
-		AutoAssignRelease: *rf.autoAssignRelease,
-	}
-
-	if *rf.repository != "" || *rf.revision != "" {
-		req.SourceControl = &builds.JSONSourceControl{
-			Provider:   *rf.provider,
-			Repository: *rf.repository,
-			Revision:   *rf.revision,
-		}
-	}
-
+	req := makeRelease(flags)
 	populateReleaseDefaults(req, envVars)
 
 	if err := req.Validate(); err != nil {
-		return fmt.Errorf("Invalid build data: %w\nSee 'bugsnag release --help'", err)
+		return fmt.Errorf("invalid build data: %w\nSee 'bugsnag release --help'", err)
 	}
 
 	publisher := builds.DefaultPublisher()
-	if endpoint := *rf.endpoint; endpoint != "" {
+	if endpoint := *flags.endpoint; endpoint != "" {
 		publisher = builds.NewPublisher(endpoint)
 	}
 	if err := publisher.Publish(req); err != nil {
-		return err
+		return fmt.Errorf("unable to publish: %w", err)
 	}
 
-	fmt.Printf("release info published for version %s\n", req.AppVersion)
+	logf("release info published for version %s\n", req.AppVersion)
 	return nil
 }
 
 func (app *application) printReleaseDebug() {
-	rf := app.releaseFlags
-	fmt.Printf("--api-key=%s\n", *rf.apiKey)
-	fmt.Printf("--app-version=%s\n", *rf.appVersion)
-	fmt.Printf("--release-stage=%s\n", *rf.releaseStage)
-	fmt.Printf("--provider=%s\n", *rf.provider)
-	fmt.Printf("--repository=%s\n", *rf.repository)
-	fmt.Printf("--revision=%s\n", *rf.revision)
-	fmt.Printf("--builder=%s\n", *rf.builder)
-	fmt.Printf("--metadata=%s\n", *rf.metadata)
-	fmt.Printf("--auto-assign-release=%v\n", *rf.autoAssignRelease)
-	fmt.Printf("--endpoint=%s\n", *rf.endpoint)
-	fmt.Printf("--app-version-code=%d\n", *rf.appVersionCode)
-	fmt.Printf("--app-bundle-version=%s\n", *rf.appBundleVersion)
-	fmt.Printf("--debug=%v\n", *rf.debug)
+	flags := app.releaseFlags
+	logf("--api-key=%s\n", *flags.apiKey)
+	logf("--app-version=%s\n", *flags.appVersion)
+	logf("--release-stage=%s\n", *flags.releaseStage)
+	logf("--provider=%s\n", *flags.provider)
+	logf("--repository=%s\n", *flags.repository)
+	logf("--revision=%s\n", *flags.revision)
+	logf("--builder=%s\n", *flags.builder)
+	logf("--metadata=%s\n", *flags.metadata)
+	logf("--auto-assign-release=%v\n", *flags.autoAssignRelease)
+	logf("--endpoint=%s\n", *flags.endpoint)
+	logf("--app-version-code=%d\n", *flags.appVersionCode)
+	logf("--app-bundle-version=%s\n", *flags.appBundleVersion)
+	logf("--debug=%v\n", *flags.debug)
 }
 
 func populateReleaseDefaults(req *builds.JSONBuildRequest, envVars map[string]string) {

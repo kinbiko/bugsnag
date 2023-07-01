@@ -8,6 +8,7 @@ import (
 
 func TestSeverityReasonType(t *testing.T) {
 	t.Parallel()
+
 	for _, tc := range []struct {
 		exp string
 		err Error
@@ -54,7 +55,7 @@ func TestWrap(t *testing.T) {
 	t.Parallel()
 	t.Run("no real input", func(t *testing.T) {
 		t.Parallel()
-		if wrappedErr := Wrap(nil, nil); wrappedErr != nil { //nolint:staticcheck // Testing that we don't do a dumb when users do a dumb
+		if wrappedErr := Wrap(nil, nil); wrappedErr != nil {
 			t.Errorf("expected no error returned but got: %s", wrappedErr)
 		}
 	})

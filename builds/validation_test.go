@@ -46,7 +46,6 @@ func TestValidate(t *testing.T) {
 			if err := makeBigValidReq().Validate(); err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-
 		})
 		t.Run("only bare-minimum populated", func(t *testing.T) {
 			if err := makeSmallValidReq().Validate(); err != nil {

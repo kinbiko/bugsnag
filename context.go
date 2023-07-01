@@ -42,7 +42,7 @@ func (n *Notifier) Deserialize(ctx context.Context, data []byte) context.Context
 		n.cfg.InternalErrorCallback(err)
 		return ctx
 	}
-	cd := &ctxData{} // nolint:exhaustivestruct // we're about to fill the data dynamically
+	cd := &ctxData{}
 	if err := json.Unmarshal(jsonData, cd); err != nil {
 		n.cfg.InternalErrorCallback(err)
 		return ctx
@@ -209,7 +209,8 @@ func (n *Notifier) WithBugsnagContext(ctx context.Context, bContext string) cont
 // WithMetadatum attaches the given key and value under the provided tab in the
 // Bugsnag dashboard. You may use the following tab names to add data to
 // existing/common tabs in the dashboard with the same name:
-//   "user", "app", "device", "request"
+//
+//	"user", "app", "device", "request"
 func (n *Notifier) WithMetadatum(ctx context.Context, tab, key string, value interface{}) context.Context {
 	if ctx == nil {
 		return nil
@@ -222,7 +223,8 @@ func (n *Notifier) WithMetadatum(ctx context.Context, tab, key string, value int
 // WithMetadata attaches the given data under the provided tab in the
 // Bugsnag dashboard. You may use the following tab names to add data to
 // existing/common tabs in the dashboard with the same name:
-//   "user", "app", "device", "request"
+//
+//	"user", "app", "device", "request"
 func (n *Notifier) WithMetadata(ctx context.Context, tab string, data map[string]interface{}) context.Context {
 	if ctx == nil {
 		return nil
@@ -331,7 +333,7 @@ func (data *jsonCtxData) updateFromCtx(ctx context.Context, unhandled bool) {
 
 func getAttachedContextData(ctx context.Context) *ctxData {
 	if val := ctx.Value(ctxDataKey); val != nil {
-		return val.(*ctxData) // nolint:forcetypeassert // This is safe. We own the key => we own the type
+		return val.(*ctxData) //nolint:forcetypeassert // This is safe. We own the key => we own the type
 	}
-	return &ctxData{} // nolint:exhaustivestruct // this saves lots of nil checks elsewhere
+	return &ctxData{}
 }

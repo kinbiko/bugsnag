@@ -64,7 +64,7 @@ func (n *Notifier) publishSessions(cfg *Configuration, sessions []*session) erro
 		return fmt.Errorf("unable to marshal json: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", cfg.EndpointSessions, bytes.NewBuffer(payload))
+	req, err := http.NewRequest(http.MethodPost, cfg.EndpointSessions, bytes.NewBuffer(payload))
 	if err != nil {
 		return fmt.Errorf("unable to create request: %w", err)
 	}
@@ -135,7 +135,8 @@ func (n *Notifier) makeJSONSessionReport(cfg *Configuration, sessions []*session
 // uuidv4 returns a randomly generated UUID v4.
 // Returns a canonical RFC-4122 string representation of the UUID:
 // xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
-// nolint:gomnd // magic numbers from RFC algorithm
+//
+//nolint:gomnd // magic numbers from RFC algorithm
 func uuidv4() string {
 	var uuid [16]byte
 	_, _ = io.ReadFull(rand.Reader, uuid[:])
