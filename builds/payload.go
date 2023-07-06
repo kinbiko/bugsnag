@@ -11,12 +11,12 @@ type JSONBuildRequest struct {
 	// the build relates to.
 	AppVersion string `json:"appVersion"` // E.g. "1.5.2"
 
-	//The release stage (eg, production, staging) that is being released (if
-	//applicable). Normally the fact that a build has been released to a
-	//release stage is detected automatically when an error event or session is
-	//received for the build. However if you would like to manually notify
-	//Bugsnag of the build being released you can specify the stage that the
-	//build was released to.
+	// The release stage (eg, production, staging) that is being released (if
+	// applicable). Normally the fact that a build has been released to a
+	// release stage is detected automatically when an error event or session is
+	// received for the build. However if you would like to manually notify
+	// Bugsnag of the build being released you can specify the stage that the
+	// build was released to.
 	ReleaseStage string `json:"releaseStage,omitempty"` // E.g. "staging"
 
 	// The name of the entity that triggered the build. Could be a user,
@@ -54,8 +54,9 @@ type JSONBuildRequest struct {
 	AutoAssignRelease bool `json:"autoAssignRelease,omitempty"`
 }
 
-// Information about the source control of the code. This can be used to
-// link errors to the source code (for supported source control tools)
+// JSONSourceControl is information about the source control of the code.
+// This can be used to link errors to the source code (for supported source
+// control tools)
 type JSONSourceControl struct {
 	// If the provider can be inferred from the repository then it is not
 	// required. Must be one of: "github", "github-enterprise", "bitbucket",

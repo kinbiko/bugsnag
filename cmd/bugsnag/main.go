@@ -1,3 +1,4 @@
+// Package main is the entrypoint for the bugsnag command-line tool.
 package main
 
 import (
@@ -25,7 +26,7 @@ type application struct {
 
 func main() {
 	if err := run(os.Args[1:], splitByEquals(os.Environ())); err != nil {
-		fmt.Printf("%s\n", err.Error())
+		logf("%s\n", err.Error())
 		os.Exit(1)
 	}
 }
@@ -37,9 +38,11 @@ func run(args []string, envvars map[string]string) error {
 	if len(args) == 0 {
 		return fmt.Errorf(usage)
 	}
-	switch args[0] {
-	case "release":
-		releaseCmd.Parse(args[1:])
+	if args[0] == "release" {
+		err := releaseCmd.Parse(args[1:])
+		if err != nil {
+			return fmt.Errorf("%w:\n%s", err, usage)
+		}
 		return app.runRelease(envvars)
 	}
 	return fmt.Errorf(usage)

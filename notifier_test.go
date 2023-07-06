@@ -123,7 +123,7 @@ func TestInternalErrorCallback(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		n.Notify(nil, nil) //nolint:staticcheck // Need to verify that the notifier doesn't die
+		n.Notify(nil, nil)
 
 		if got == nil {
 			t.Error("expected an error in the error callback but got none")
@@ -137,6 +137,6 @@ func TestInternalErrorCallback(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		n.Notify(nil, nil) //nolint:staticcheck // Need to verify that the notifier doesn't die
+		n.Notify(nil, nil)
 	})
 }

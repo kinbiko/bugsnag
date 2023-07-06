@@ -1,14 +1,15 @@
 package builds_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/kinbiko/bugsnag/builds"
 	"github.com/kinbiko/jsonassert"
+
+	"github.com/kinbiko/bugsnag/builds"
 )
 
 func TestNonConstructedPublisher(t *testing.T) {
@@ -21,9 +22,9 @@ func TestPublishingBuilds(t *testing.T) {
 	testServer := func() (*httptest.Server, chan string) {
 		reqs := make(chan string, 10)
 		return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			body, _ := ioutil.ReadAll(r.Body)
+			body, _ := io.ReadAll(r.Body)
 			reqs <- string(body)
-			w.Write([]byte(`{"status": "ok"}`))
+			_, _ = w.Write([]byte(`{"status": "ok"}`))
 		})), reqs
 	}
 
@@ -82,5 +83,4 @@ func TestPublishingBuilds(t *testing.T) {
 			"appVersion": "1.5.2"
 		}`)
 	})
-
 }

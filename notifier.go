@@ -204,7 +204,7 @@ func (n *Notifier) sendErrorReport(r *JSONErrorReport) error {
 	if err != nil {
 		return fmt.Errorf("unable to marshal JSON: %w", err)
 	}
-	req, err := http.NewRequest("POST", n.cfg.EndpointNotify, bytes.NewBuffer(b))
+	req, err := http.NewRequest(http.MethodPost, n.cfg.EndpointNotify, bytes.NewBuffer(b))
 	if err != nil {
 		return fmt.Errorf("unable to create new request: %w", err)
 	}
@@ -292,7 +292,7 @@ func makeExceptions(err error) []*JSONException {
 	}
 
 	eps := make([]*JSONException, len(errs))
-	for i, err := range errs { // nolint:varnamelen // indexes are conventionally i
+	for i, err := range errs { //nolint:varnamelen // indexes are conventionally i
 		var stacktrace []*JSONStackframe
 		if berr, ok := err.(*Error); ok {
 			stacktrace = berr.stacktrace
@@ -383,13 +383,13 @@ func makeNotifier(cfg *Configuration) *JSONNotifier {
 // dashboard because the deepest "exception" (the non-Bugsnag err) which
 // gets given a default stackframe of:
 //
-//   {
-//     (... other fluff ...)
-//     "file": "unknown file",
-//     "in_project": null,
-//     "line_number": 0,
-//     "method": "unknown method"
-//   }
+//	{
+//	  (... other fluff ...)
+//	  "file": "unknown file",
+//	  "in_project": null,
+//	  "line_number": 0,
+//	  "method": "unknown method"
+//	}
 //
 // Even though this frame is not in project (or rather "null in project",
 // whatever that means), lower exceptions take priority over frames being

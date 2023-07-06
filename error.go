@@ -24,7 +24,7 @@ type Error struct {
 	Severity  severity
 
 	err        error
-	ctx        context.Context // nolint:containedctx // We're storing it for valid reasons
+	ctx        context.Context //nolint:containedctx // We're storing it for valid reasons
 	stacktrace []*JSONStackframe
 	msg        string
 }
@@ -96,7 +96,7 @@ func makeStacktrace(module string) []*JSONStackframe {
 	pcs := ptrs[0:runtime.Callers(0, ptrs[:])]
 
 	stacktrace := make([]*JSONStackframe, len(pcs))
-	for i, pc := range pcs { // nolint:varnamelen // indexes are conventionally i
+	for i, pc := range pcs { //nolint:varnamelen // indexes are conventionally i
 		pc-- // pc - 1 is the *real* program counter, for reasons beyond me.
 
 		file, lineNumber, method := "unknown", 0, "unknown"
