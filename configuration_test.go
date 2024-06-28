@@ -95,7 +95,6 @@ func TestConfigurationValidation(t *testing.T) {
 			expMsg: `app version must be valid semver`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.cfg.validate()
 			if err == nil {

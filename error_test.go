@@ -20,7 +20,6 @@ func TestSeverityReasonType(t *testing.T) {
 		{exp: "userSpecifiedSeverity", err: Error{Severity: SeverityError}},
 		{exp: "userSpecifiedSeverity", err: Error{Severity: SeverityError, Unhandled: true, Panic: true}},
 	} {
-		tc := tc
 		t.Run(tc.exp, func(t *testing.T) {
 			t.Parallel()
 			if got := severityReasonType(&tc.err); got != tc.exp {
@@ -101,7 +100,6 @@ func TestWrap(t *testing.T) {
 		{ctx: nil, err: err, msg: fmtBase, args: args, expErrString: wrappedFmtMsg, name: "all args but ctx"},
 		{ctx: ctx, err: err, msg: fmtBase, args: args, expErrString: wrappedFmtMsg, name: "all args"},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.msg != "" || tc.args != nil {

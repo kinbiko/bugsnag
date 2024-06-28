@@ -48,7 +48,8 @@ run:
 # output configuration options
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"
-  format: colored-line-number
+  formats:
+    format: colored-line-number
 
   # print lines of code with issue, default is true
   print-issued-lines: true
@@ -78,7 +79,7 @@ linters-settings:
 
   govet:
     # report about shadowed variables
-    check-shadowing: true
+    shadow: true
 
     # enable or disable analyzers by name
     # enable:
@@ -225,12 +226,6 @@ linters:
     - godot
     - nlreturn
 
-      # These are apparently disabled but still yell at you if you don't disable them
-    - golint
-    - scopelint
-    - maligned
-    - interfacer
-
       # This won't shut up about using errors.As which doesn't make sense in
       # general in this package.
     - errorlint
@@ -272,7 +267,6 @@ issues:
         - funlen
         - gocognit
         - gocyclo
-        - gomnd
         - lll
         - paralleltest
         - staticcheck
@@ -282,7 +276,9 @@ issues:
     - path: \.go
       linters:
         - goerr113
+        - err113
         - exhaustruct
+        - mnd
 
   # Independently from option `exclude` we use default exclude patterns,
   # it can be disabled by this option. To list all

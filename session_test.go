@@ -80,7 +80,6 @@ func TestSessionAndContext(t *testing.T) {
 		{expUnhandledCount: 1, expHandledCount: 0, name: "unhandled", unhandled: true},
 		{expUnhandledCount: 0, expHandledCount: 1, name: "handled", unhandled: false},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			n, err := New(Configuration{APIKey: "abcd1234abcd1234abcd1234abcd1234", ReleaseStage: "dev", AppVersion: "1.2.3"})
