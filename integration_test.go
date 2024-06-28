@@ -21,7 +21,7 @@ import (
 func TestIntegration(t *testing.T) {
 	reports := make(chan string, 1)
 
-	ntfServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ntfServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		payload, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatal(err)
@@ -30,7 +30,7 @@ func TestIntegration(t *testing.T) {
 	}))
 	defer ntfServer.Close()
 
-	sessionServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	sessionServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))
 	defer sessionServer.Close()
 
 	ntf, _ := bugsnag.New(bugsnag.Configuration{

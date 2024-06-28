@@ -76,7 +76,6 @@ func TestContextWithMethods(t *testing.T) {
 			{"WithMetadatum", func() { n.WithMetadatum(ctx, "whatever", "foo", "bar") }},
 			{"WithUser", func() { n.WithUser(ctx, User{}) }},
 		} {
-			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 				defer func() {

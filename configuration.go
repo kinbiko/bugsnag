@@ -2,6 +2,7 @@ package bugsnag
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -100,11 +101,11 @@ func (cfg *Configuration) validate() error {
 		return fmt.Errorf(`sessions endpoint be a valid URL, got "%s"`, cfg.EndpointSessions)
 	}
 	if cfg.ReleaseStage == "" {
-		return fmt.Errorf("release stage must be set")
+		return errors.New("release stage must be set")
 	}
 	semverRegex := `v?([0-9]+)(\.[0-9]+)?(\.[0-9]+)?(-([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?(\+([0-9A-Za-z\-]+(\.[0-9A-Za-z\-]+)*))?`
 	if r := regexp.MustCompile(semverRegex); !r.MatchString(cfg.AppVersion) {
-		return fmt.Errorf("app version must be valid semver")
+		return errors.New("app version must be valid semver")
 	}
 	return nil
 }

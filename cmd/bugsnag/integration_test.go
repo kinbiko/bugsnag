@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -26,11 +25,11 @@ func TestRelease(t *testing.T) {
 	defer ts.Close()
 
 	t.Run("small payload", func(t *testing.T) {
-		cmd := fmt.Sprintf(`release
+		cmd := `release
 --api-key=1234abcd1234abcd1234abcd1234abcd
 --app-version=2.5.2
 --release-stage=
---endpoint=%s`, ts.URL)
+--endpoint=` + ts.URL
 		err := run(strings.Split(cmd, "\n"), map[string]string{})
 		if err != nil {
 			t.Fatal(err)
@@ -51,7 +50,7 @@ func TestRelease(t *testing.T) {
 	})
 
 	t.Run("big payload", func(t *testing.T) {
-		cmd := fmt.Sprintf(`release
+		cmd := `release
 --api-key=1234abcd1234abcd1234abcd1234abcd
 --app-version=2.5.2
 --release-stage=staging
@@ -63,7 +62,7 @@ func TestRelease(t *testing.T) {
 --auto-assign-release=true
 --app-version-code=1234
 --app-bundle-version=5.2
---endpoint=%s`, ts.URL)
+--endpoint=` + ts.URL
 		err := run(strings.Split(cmd, "\n"), map[string]string{})
 		if err != nil {
 			t.Fatal(err)
@@ -97,7 +96,7 @@ func TestRelease(t *testing.T) {
 	})
 
 	t.Run("uses defaults", func(t *testing.T) {
-		cmd := fmt.Sprintf(`release --endpoint=%s`, ts.URL)
+		cmd := `release --endpoint=` + ts.URL
 		err := run(strings.Split(cmd, " "), map[string]string{
 			"BUGSNAG_API_KEY": "1234abcd1234abcd1234abcd1234abcd",
 			"APP_VERSION":     "2.5.2",

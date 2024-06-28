@@ -2,6 +2,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -36,7 +37,7 @@ func run(args []string, envvars map[string]string) error {
 	app := application{releaseFlags: newReleaseFlags(releaseCmd)}
 
 	if len(args) == 0 {
-		return fmt.Errorf(usage)
+		return errors.New(usage)
 	}
 	if args[0] == "release" {
 		err := releaseCmd.Parse(args[1:])
@@ -45,5 +46,5 @@ func run(args []string, envvars map[string]string) error {
 		}
 		return app.runRelease(envvars)
 	}
-	return fmt.Errorf(usage)
+	return errors.New(usage)
 }

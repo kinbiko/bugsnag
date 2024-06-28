@@ -25,7 +25,6 @@ func TestApp(t *testing.T) {
 			exp:  `{ "duration": 5000, "releaseStage": "staging", "version": "1.5.2" }`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.cfg.appStartTime = time.Now().Add(-5 * time.Second)

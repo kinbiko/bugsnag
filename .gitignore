@@ -12,3 +12,7 @@
 *.out
 
 tags
+
+bin/
+
+profile.cov

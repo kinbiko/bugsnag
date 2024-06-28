@@ -1,6 +1,7 @@
 package builds
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -14,7 +15,7 @@ func (r *JSONBuildRequest) Validate() error {
 	}
 
 	if strings.TrimSpace(r.AppVersion) == "" {
-		return fmt.Errorf(`AppVersion must be present`)
+		return errors.New(`AppVersion must be present`)
 	}
 
 	if r.SourceControl == nil {
@@ -22,10 +23,10 @@ func (r *JSONBuildRequest) Validate() error {
 	}
 
 	if r.SourceControl.Repository == "" {
-		return fmt.Errorf(`SourceControl.Repository must be present when SourceControl is set`)
+		return errors.New(`SourceControl.Repository must be present when SourceControl is set`)
 	}
 	if r.SourceControl.Revision == "" {
-		return fmt.Errorf(`SourceControl.Revision must be present when SourceControl is set`)
+		return errors.New(`SourceControl.Revision must be present when SourceControl is set`)
 	}
 	if provider := r.SourceControl.Provider; provider != "" {
 		if err := validateSourceControlProvider(provider); err != nil {

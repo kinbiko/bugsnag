@@ -5,7 +5,7 @@ package bugsnag
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -34,7 +34,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 			t.Fatal(err)
 		}
 		ctx := n.StartSession(context.Background())
-		n.Notify(ctx, fmt.Errorf("oooi"))
+		n.Notify(ctx, errors.New("oooi"))
 		n.Close()
 	})
 
@@ -57,7 +57,7 @@ func TestNoPanicsWhenShuttingDown(t *testing.T) {
 			t.Fatal(err)
 		}
 		n.Close()
-		n.Notify(context.Background(), fmt.Errorf("oops"))
+		n.Notify(context.Background(), errors.New("oops"))
 
 		if got == nil {
 			t.Fatal("expected error but got none")

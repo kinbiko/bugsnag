@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,7 +38,7 @@ type Publisher struct {
 // Publish sends the request to Bugsnag's Build API.
 func (p *Publisher) Publish(req *JSONBuildRequest) error {
 	if p.endpoint == "" {
-		return fmt.Errorf("publisher created incorrectly; please use NewPublisher or DefaultPublisher to construct your builds.Publisher")
+		return errors.New("publisher created incorrectly; please use NewPublisher or DefaultPublisher to construct your builds.Publisher")
 	}
 
 	jsonBody, err := json.Marshal(req)
